@@ -1,21 +1,25 @@
 'use client';
 
+import { use } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { InvoiceRow } from '@/lib/invoicing-types';
 
-export default function InvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function InvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const router = useRouter();
   const qc = useQueryClient();
-  const base = `/invoicing/invoices/${params.id}`;
+  const base = `/invoicing/invoices/${rid}`;
 
   const inv = useQuery({
-    queryKey: ['invoice', params.id],
+    queryKey: ['invoice', rid],
     queryFn: async () => (await api.get<InvoiceRow>(base)).data,
   });
 
@@ -27,7 +31,8 @@ export default function InvoiceDetailPage({ params }: { params: { id: string } }
     onSuccess: (data, action) => {
       if (action === 'delete') return router.replace('/dashboard/invoicing/invoices');
       if (action === 'convert' || action === 'credit-note') return router.push(`/dashboard/invoicing/invoices/${(data as InvoiceRow).id}`);
-      void qc.invalidateQueries({ queryKey: ['invoice', params.id] });
+      void qc.invalidateQueries({ queryKey: ['invoice', rid] });
+      toast.success(action === 'post' ? 'Invoice posted' : 'Invoice updated');
     },
   });
 

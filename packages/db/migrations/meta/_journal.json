@@ -50,6 +50,13 @@
       "when": 1794137667268,
       "tag": "0006_budgets",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1794139360201,
+      "tag": "0007_security",
+      "breakpoints": true
     }
   ]
 }

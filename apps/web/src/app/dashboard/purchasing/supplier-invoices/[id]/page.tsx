@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -7,11 +9,12 @@ import { cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { Match, Si } from '@/lib/purchasing-types';
 
-export default function SupplierInvoiceDetailPage({ params }: { params: { id: string } }) {
+export default function SupplierInvoiceDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
-  const base = `/purchasing/supplier-invoices/${params.id}`;
-  const inv = useQuery({ queryKey: ['sinv', params.id], queryFn: async () => (await api.get<Si>(base)).data });
-  const match = useQuery({ queryKey: ['sinv-match', params.id], queryFn: async () => (await api.get<Match>(`${base}/three-way-match`)).data });
+  const base = `/purchasing/supplier-invoices/${rid}`;
+  const inv = useQuery({ queryKey: ['sinv', rid], queryFn: async () => (await api.get<Si>(base)).data });
+  const match = useQuery({ queryKey: ['sinv-match', rid], queryFn: async () => (await api.get<Match>(`${base}/three-way-match`)).data });
   const d = inv.data;
   if (!d) return <p className="text-slate-400">{inv.isError ? errMsg(inv.error) : '…'}</p>;
   const m = match.data;

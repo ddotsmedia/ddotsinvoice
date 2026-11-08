@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -7,14 +9,15 @@ import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { Po } from '@/lib/purchasing-types';
 
-export default function PoDetailPage({ params }: { params: { id: string } }) {
+export default function PoDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/purchasing/purchase-orders/${params.id}`;
-  const po = useQuery({ queryKey: ['po', params.id], queryFn: async () => (await api.get<Po>(base)).data });
+  const base = `/purchasing/purchase-orders/${rid}`;
+  const po = useQuery({ queryKey: ['po', rid], queryFn: async () => (await api.get<Po>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'submit' | 'approve' | 'cancel') => (await api.post(`${base}/${a}`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['po', params.id] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['po', rid] }),
   });
   const d = po.data;
   if (!d) return <p className="text-slate-400">{po.isError ? errMsg(po.error) : '…'}</p>;

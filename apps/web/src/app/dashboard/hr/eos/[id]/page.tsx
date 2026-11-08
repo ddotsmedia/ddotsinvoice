@@ -1,21 +1,25 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 
 interface Eos { id: string; terminationDate: string; yearsOfService: string; lastBasicSalary: string; gratuityAmount: string; leaveEncashment: string; otherSettlements: string; totalAmount: string; status: string }
 
-export default function EosDetailPage({ params }: { params: { id: string } }) {
+export default function EosDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/hr/eos/${params.id}`;
-  const eos = useQuery({ queryKey: ['eos', params.id], queryFn: async () => (await api.get<Eos>(base)).data });
+  const base = `/hr/eos/${rid}`;
+  const eos = useQuery({ queryKey: ['eos', rid], queryFn: async () => (await api.get<Eos>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'approve' | 'pay') => (await api.post(`${base}/${a}`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['eos', params.id] }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['eos', rid] }); toast.success('Saved'); },
   });
   const d = eos.data;
   if (!d) return <p className="text-slate-400">{eos.isError ? errMsg(eos.error) : '…'}</p>;

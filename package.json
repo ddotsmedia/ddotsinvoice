@@ -22,5 +22,13 @@
     "decimal.js": "^10.6.0",
     "tsx": "^4.23.15",
     "typescript": "5"
+  },
+  "pnpm": {
+    "overrides": {
+      "postcss": ">=8.5.18"
+    }
+  },
+  "securityNotes": {
+    "zod": "zod@3 advisory (fixed in 4.6.6): zod 4 is a breaking migration (hookform resolvers, shared validators); tracked separately."
   }
 }

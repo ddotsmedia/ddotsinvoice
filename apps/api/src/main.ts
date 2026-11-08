@@ -4,12 +4,14 @@ import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import fastifyCookie from '@fastify/cookie';
+import { TenantContextInterceptor } from './common/interceptors/tenant-context.interceptor';
 import { AppModule } from './app.module';
 
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
   await app.register(fastifyCookie);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
+  app.useGlobalInterceptors(new TenantContextInterceptor());
   app.enableCors({
     origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,https://ddotsinvoice.com').split(','),
     credentials: true,

@@ -18,7 +18,7 @@ export const ADMIN_DB = Symbol('ADMIN_DB');
     {
       provide: ADMIN_DB,
       inject: [ConfigService],
-      useFactory: (c: ConfigService): Db => createDb(c.getOrThrow<string>('DATABASE_URL'), 5),
+      useFactory: (c: ConfigService): Db => createDb(c.get<string>('DATABASE_ADMIN_URL') ?? c.getOrThrow<string>('DATABASE_URL'), 5),
     },
   ],
   exports: [DB, ADMIN_DB],

@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useQuery } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -7,15 +9,16 @@ import { cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { Customer, Statement } from '@/lib/invoicing-types';
 
-export default function CustomerDetailPage({ params }: { params: { id: string } }) {
+export default function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const customer = useQuery({
-    queryKey: ['customer', params.id],
-    queryFn: async () => (await api.get<Customer>(`/invoicing/customers/${params.id}`)).data,
+    queryKey: ['customer', rid],
+    queryFn: async () => (await api.get<Customer>(`/invoicing/customers/${rid}`)).data,
   });
   const statement = useQuery({
-    queryKey: ['statement', params.id],
-    queryFn: async () => (await api.get<Statement>(`/invoicing/customers/${params.id}/statement`)).data,
+    queryKey: ['statement', rid],
+    queryFn: async () => (await api.get<Statement>(`/invoicing/customers/${rid}/statement`)).data,
   });
 
   if (customer.isError) return <p className="text-red-600">{errMsg(customer.error)}</p>;

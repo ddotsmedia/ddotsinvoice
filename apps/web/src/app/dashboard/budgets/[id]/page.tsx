@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { money } from '@ddotsinvoice/money';
@@ -10,14 +12,15 @@ import { errMsg, useLabel } from '@/lib/ui-helpers';
 interface Line { id: string; code: string; nameEn: string; budgetedAmount: string; actualAmount: string; variance: string }
 interface Budget { id: string; name: string; fiscalYear: number; fiscalMonth: number | null; status: string; lines: Line[] }
 
-export default function BudgetDetailPage({ params }: { params: { id: string } }) {
+export default function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/budgets/${params.id}`;
-  const b = useQuery({ queryKey: ['budget', params.id], queryFn: async () => (await api.get<Budget>(base)).data });
+  const base = `/budgets/${rid}`;
+  const b = useQuery({ queryKey: ['budget', rid], queryFn: async () => (await api.get<Budget>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'approve' | 'refresh-actuals') => (await api.post(`${base}/${a}`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['budget', params.id] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['budget', rid] }),
   });
   const d = b.data;
   if (!d) return <p className="text-slate-400">{b.isError ? errMsg(b.error) : '…'}</p>;

@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -7,14 +9,15 @@ import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { Grn } from '@/lib/purchasing-types';
 
-export default function GrnDetailPage({ params }: { params: { id: string } }) {
+export default function GrnDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/purchasing/goods-receipts/${params.id}`;
-  const grn = useQuery({ queryKey: ['grn', params.id], queryFn: async () => (await api.get<Grn>(base)).data });
+  const base = `/purchasing/goods-receipts/${rid}`;
+  const grn = useQuery({ queryKey: ['grn', rid], queryFn: async () => (await api.get<Grn>(base)).data });
   const post = useMutation({
     mutationFn: async () => (await api.post(`${base}/post`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['grn', params.id] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['grn', rid] }),
   });
   const d = grn.data;
   if (!d) return <p className="text-slate-400">{grn.isError ? errMsg(grn.error) : '…'}</p>;

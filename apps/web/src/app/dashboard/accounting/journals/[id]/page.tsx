@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
@@ -8,14 +10,15 @@ import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 import type { Journal } from '@/lib/accounting-types';
 
-export default function JournalDetailPage({ params }: { params: { id: string } }) {
+export default function JournalDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const router = useRouter();
   const qc = useQueryClient();
-  const base = `/accounting/journals/${params.id}`;
+  const base = `/accounting/journals/${rid}`;
 
   const journal = useQuery({
-    queryKey: ['journal', params.id],
+    queryKey: ['journal', rid],
     queryFn: async () => (await api.get<Journal>(base)).data,
   });
 
@@ -27,7 +30,7 @@ export default function JournalDetailPage({ params }: { params: { id: string } }
     onSuccess: (data, action) => {
       if (action === 'delete') return router.replace('/dashboard/accounting/journals');
       if (action === 'reverse') return router.push(`/dashboard/accounting/journals/${(data as Journal).id}`);
-      void qc.invalidateQueries({ queryKey: ['journal', params.id] });
+      void qc.invalidateQueries({ queryKey: ['journal', rid] });
     },
   });
 

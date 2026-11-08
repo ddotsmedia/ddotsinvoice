@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { money } from '@ddotsinvoice/money';
@@ -13,16 +15,17 @@ interface Emp {
   leaveBalances: { code: string; balance: string; taken: string }[];
 }
 
-export default function EmployeeProfilePage({ params }: { params: { id: string } }) {
+export default function EmployeeProfilePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const router = useRouter();
-  const emp = useQuery({ queryKey: ['employee', params.id], queryFn: async () => (await api.get<Emp>(`/hr/employees/${params.id}`)).data });
+  const emp = useQuery({ queryKey: ['employee', rid], queryFn: async () => (await api.get<Emp>(`/hr/employees/${rid}`)).data });
   const terminate = useMutation({
-    mutationFn: async () => (await api.post(`/hr/employees/${params.id}/terminate`, { terminationDate: new Date().toISOString().slice(0, 10) })).data,
+    mutationFn: async () => (await api.post(`/hr/employees/${rid}/terminate`, { terminationDate: new Date().toISOString().slice(0, 10) })).data,
     onSuccess: () => void emp.refetch(),
   });
   const eos = useMutation({
-    mutationFn: async () => (await api.post<{ id: string }>('/hr/eos/calculate', { employeeId: params.id })).data,
+    mutationFn: async () => (await api.post<{ id: string }>('/hr/eos/calculate', { employeeId: rid })).data,
     onSuccess: (d) => router.push(`/dashboard/hr/eos/${d.id}`),
   });
   const d = emp.data;

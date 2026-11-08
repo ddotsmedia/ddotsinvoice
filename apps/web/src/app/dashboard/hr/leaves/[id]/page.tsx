@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { btnCls, cardCls } from '@/components/ui';
@@ -7,15 +9,16 @@ import { errMsg, useLabel } from '@/lib/ui-helpers';
 
 interface Req { id: string; startDate: string; endDate: string; days: string; status: string; notes: string | null }
 
-export default function LeaveDetailPage({ params }: { params: { id: string } }) {
+export default function LeaveDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/hr/leaves/${params.id}`;
-  const req = useQuery({ queryKey: ['leave', params.id], queryFn: async () => (await api.get<Req>(base)).data });
+  const base = `/hr/leaves/${rid}`;
+  const req = useQuery({ queryKey: ['leave', rid], queryFn: async () => (await api.get<Req>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'approve' | 'reject') => (await api.post(`${base}/${a}`)).data,
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['leave', params.id] });
+      void qc.invalidateQueries({ queryKey: ['leave', rid] });
       void qc.invalidateQueries({ queryKey: ['leaves'] });
     },
   });

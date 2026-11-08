@@ -1,22 +1,26 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 
 interface Alloc { id: string; invoiceNumber: string; allocatedAmount: string }
 interface Payment { id: string; number: string; date: string; amount: string; paymentMethod: string; status: string; allocations: Alloc[] }
 
-export default function SupplierPaymentDetailPage({ params }: { params: { id: string } }) {
+export default function SupplierPaymentDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/payments/supplier-payments/${params.id}`;
-  const p = useQuery({ queryKey: ['sp', params.id], queryFn: async () => (await api.get<Payment>(base)).data });
+  const base = `/payments/supplier-payments/${rid}`;
+  const p = useQuery({ queryKey: ['sp', rid], queryFn: async () => (await api.get<Payment>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'post' | 'void') => (await api.post(`${base}/${a}`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['sp', params.id] }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['sp', rid] }); toast.success('Saved'); },
   });
   const d = p.data;
   if (!d) return <p className="text-slate-400">{p.isError ? errMsg(p.error) : '…'}</p>;

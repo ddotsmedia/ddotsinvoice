@@ -28,7 +28,8 @@ services:
     env_file: .env
     environment:
       # inside the compose network, service names replace localhost
-      DATABASE_URL: postgres://ddots:ddots_dev@postgres:5432/ddotsinvoice
+      DATABASE_URL: postgres://ddots_app:AppPass2026!@postgres:5432/ddotsinvoice
+      DATABASE_ADMIN_URL: postgres://ddots:ddots_dev@postgres:5432/ddotsinvoice
       REDIS_URL: redis://redis:6379
     depends_on:
       postgres: { condition: service_healthy }

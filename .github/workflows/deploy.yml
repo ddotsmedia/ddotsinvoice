@@ -1,90 +1,74 @@
-name: Deploy
+name: CI/CD
 
 on:
   push:
-    branches: [main]
-
-permissions:
-  contents: read
-  packages: write
-
-env:
-  API_IMAGE: ghcr.io/ddotsmedia/ddotsinvoice-api
-  WEB_IMAGE: ghcr.io/ddotsmedia/ddotsinvoice-web
+    branches: [master]
+  pull_request:
+    branches: [master]
 
 jobs:
-  build-push:
+  test:
     runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: ddotsinvoice_test
+          POSTGRES_USER: ddots
+          POSTGRES_PASSWORD: ddots
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd pg_isready --health-interval 10s --health-timeout 5s --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 10s
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r build
+      - run: pnpm typecheck
+      - name: Migrations on a fresh database
+        run: pnpm --filter @ddotsinvoice/db db:migrate
+        env:
+          DATABASE_URL: postgresql://ddots:ddots@localhost:5432/ddotsinvoice_test
+          DATABASE_ADMIN_URL: postgresql://ddots:ddots@localhost:5432/ddotsinvoice_test
+      - name: Dependency audit (high and critical)
+        run: pnpm audit --audit-level=critical
+
+  build-docker:
+    needs: test
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
       - uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
-          password: ${{ secrets.GHCR_TOKEN }}
-
-      - uses: docker/build-push-action@v6
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v5
         with:
           context: .
           file: apps/api/Dockerfile
           push: true
-          tags: |
-            ${{ env.API_IMAGE }}:latest
-            ${{ env.API_IMAGE }}:${{ github.sha }}
-
-      - uses: docker/build-push-action@v6
+          tags: ghcr.io/ddotsmedia/ddotsinvoice-api:latest
+      - uses: docker/build-push-action@v5
         with:
           context: .
           file: apps/web/Dockerfile
           push: true
           build-args: |
             NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
-          tags: |
-            ${{ env.WEB_IMAGE }}:latest
-            ${{ env.WEB_IMAGE }}:${{ github.sha }}
-
-  deploy:
-    needs: build-push
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Copy compose file to VPS
-        uses: appleboy/scp-action@v0.1.7
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          source: docker-compose.prod.yml
-          target: ddotsinvoice
-
-      - name: Deploy on VPS
-        uses: appleboy/ssh-action@v1.0.3
-        env:
-          IMAGE_TAG: ${{ github.sha }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-          REDIS_URL: ${{ secrets.REDIS_URL }}
-          JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          JWT_REFRESH_SECRET: ${{ secrets.JWT_REFRESH_SECRET }}
-          GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
-        with:
-          host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}
-          key: ${{ secrets.VPS_SSH_KEY }}
-          envs: IMAGE_TAG,DATABASE_URL,REDIS_URL,JWT_SECRET,JWT_REFRESH_SECRET,GHCR_TOKEN
-          script: |
-            cd ~/ddotsinvoice
-            umask 077
-            printf 'DATABASE_URL=%s\nREDIS_URL=%s\nJWT_SECRET=%s\nJWT_REFRESH_SECRET=%s\nNODE_ENV=production\nPORT=3001\n' \
-              "$DATABASE_URL" "$REDIS_URL" "$JWT_SECRET" "$JWT_REFRESH_SECRET" > .env
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-            docker pull ghcr.io/ddotsmedia/ddotsinvoice-api:$IMAGE_TAG
-            docker pull ghcr.io/ddotsmedia/ddotsinvoice-web:$IMAGE_TAG
-            IMAGE_TAG=$IMAGE_TAG docker-compose -f docker-compose.prod.yml up -d
-            for i in $(seq 1 20); do
-              if [ "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:3001/health)" = "200" ]; then
-                echo "health ok"; exit 0
-              fi
-              sleep 3
-            done
-            echo "health check failed"; exit 1
+          tags: ghcr.io/ddotsmedia/ddotsinvoice-web:latest

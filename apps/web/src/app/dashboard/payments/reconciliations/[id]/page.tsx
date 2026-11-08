@@ -1,5 +1,7 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -10,27 +12,28 @@ interface Summary { openingBalance: string; closingBalance: string; bookBalance:
 interface Rec { id: string; statementDate: string; status: string }
 interface Tx { id: string; number: string; date: string; type: string; amount: string; isReconciled: boolean }
 
-export default function ReconciliationWorkspacePage({ params }: { params: { id: string } }) {
+export default function ReconciliationWorkspacePage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/payments/reconciliations/${params.id}`;
-  const rec = useQuery({ queryKey: ['rec', params.id], queryFn: async () => (await api.get<Rec>(base)).data });
-  const sum = useQuery({ queryKey: ['rec-sum', params.id], queryFn: async () => (await api.get<Summary>(`${base}/summary`)).data });
+  const base = `/payments/reconciliations/${rid}`;
+  const rec = useQuery({ queryKey: ['rec', rid], queryFn: async () => (await api.get<Rec>(base)).data });
+  const sum = useQuery({ queryKey: ['rec-sum', rid], queryFn: async () => (await api.get<Summary>(`${base}/summary`)).data });
   const txs = useQuery({
-    queryKey: ['rec-txs', params.id],
+    queryKey: ['rec-txs', rid],
     enabled: !!rec.data,
     queryFn: async () => (await api.get<{ items: Tx[] }>('/payments/bank-transactions', { params: { limit: 100, bankAccountId: (rec.data as unknown as { bankAccountId: string }).bankAccountId } })).data.items,
   });
   const reconcile = useMutation({
     mutationFn: async (id: string) => (await api.post(`/payments/bank-transactions/${id}/reconcile`)).data,
     onSuccess: () => {
-      void qc.invalidateQueries({ queryKey: ['rec-sum', params.id] });
-      void qc.invalidateQueries({ queryKey: ['rec-txs', params.id] });
+      void qc.invalidateQueries({ queryKey: ['rec-sum', rid] });
+      void qc.invalidateQueries({ queryKey: ['rec-txs', rid] });
     },
   });
   const close = useMutation({
     mutationFn: async () => (await api.post(`${base}/close`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['rec', params.id] }),
+    onSuccess: () => void qc.invalidateQueries({ queryKey: ['rec', rid] }),
   });
 
   const s = sum.data;

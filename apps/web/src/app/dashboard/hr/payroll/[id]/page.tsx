@@ -1,22 +1,26 @@
 'use client';
 
+import { use } from 'react';
+
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
+import { toast } from 'sonner';
 import { btnCls, cardCls } from '@/components/ui';
 import { errMsg, useLabel } from '@/lib/ui-helpers';
 
 interface Line { id: string; employeeId: string; grossSalary: string; deductions: string; netSalary: string; paidDays: string }
 interface Run { id: string; periodYear: number; periodMonth: number; status: string; totalGross: string; totalNet: string; wpsFileName: string | null; lines: Line[] }
 
-export default function PayrollRunPage({ params }: { params: { id: string } }) {
+export default function PayrollRunPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id: rid } = use(params);
   const L = useLabel();
   const qc = useQueryClient();
-  const base = `/hr/payroll/${params.id}`;
-  const run = useQuery({ queryKey: ['payroll-run', params.id], queryFn: async () => (await api.get<Run>(base)).data });
+  const base = `/hr/payroll/${rid}`;
+  const run = useQuery({ queryKey: ['payroll-run', rid], queryFn: async () => (await api.get<Run>(base)).data });
   const act = useMutation({
     mutationFn: async (a: 'approve' | 'pay' | 'cancel') => (await api.post(`${base}/${a}`)).data,
-    onSuccess: () => void qc.invalidateQueries({ queryKey: ['payroll-run', params.id] }),
+    onSuccess: () => { void qc.invalidateQueries({ queryKey: ['payroll-run', rid] }); toast.success('Saved'); },
   });
   const downloadWps = async () => {
     const r = await api.get(`${base}/wps`, { responseType: 'blob' });
