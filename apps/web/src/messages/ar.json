@@ -1,0 +1,70 @@
+{
+  "login": {
+    "title": "تسجيل الدخول",
+    "email": "البريد الإلكتروني",
+    "password": "كلمة المرور",
+    "submit": "دخول",
+    "error": "البريد الإلكتروني أو كلمة المرور غير صحيحة"
+  },
+  "nav": {
+    "dashboard": "الرئيسية",
+    "companies": "الشركات",
+    "users": "المستخدمون",
+    "comingSoon": "قريباً",
+    "logout": "تسجيل الخروج",
+    "theme": "تبديل المظهر"
+  },
+  "modules": {
+    "invoices": "الفواتير",
+    "customers": "العملاء",
+    "quotations": "عروض الأسعار",
+    "products": "المنتجات",
+    "inventory": "المخزون",
+    "purchases": "المشتريات",
+    "vendors": "الموردون",
+    "expenses": "المصروفات",
+    "banking": "البنوك",
+    "accounting": "المحاسبة",
+    "vat": "إقرارات ضريبة القيمة المضافة",
+    "reports": "التقارير",
+    "payroll": "الموارد البشرية والرواتب"
+  },
+  "kpi": {
+    "totalInvoices": "إجمالي الفواتير",
+    "revenueMtd": "الإيرادات منذ بداية الشهر",
+    "outstanding": "المستحقات",
+    "companies": "الشركات"
+  },
+  "common": {
+    "name": "الاسم",
+    "nameAr": "الاسم (عربي)",
+    "trn": "الرقم الضريبي",
+    "email": "البريد الإلكتروني",
+    "phone": "الهاتف",
+    "currency": "العملة",
+    "status": "الحالة",
+    "role": "الدور",
+    "firstName": "الاسم الأول",
+    "lastName": "اسم العائلة",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "empty": "لا توجد سجلات بعد",
+    "cancel": "إلغاء",
+    "save": "حفظ",
+    "error": "حدث خطأ ما. حاول مرة أخرى."
+  },
+  "companies": { "title": "الشركات", "add": "إضافة شركة" },
+  "users": { "title": "المستخدمون", "invite": "دعوة مستخدم" },
+  "roles": {
+    "platform_admin": "مدير المنصة",
+    "tenant_admin": "مدير المستأجر",
+    "company_admin": "مدير الشركة",
+    "branch_manager": "مدير الفرع",
+    "accountant": "محاسب",
+    "sales": "مبيعات",
+    "purchasing": "مشتريات",
+    "warehouse": "مستودع",
+    "hr_payroll": "الموارد البشرية والرواتب",
+    "viewer": "مشاهد"
+  }
+}

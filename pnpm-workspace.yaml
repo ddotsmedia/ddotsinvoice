@@ -1,0 +1,6 @@
+packages:
+  - apps/api
+  - apps/web
+  - packages/db
+  - packages/shared
+  - packages/money

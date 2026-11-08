@@ -1,0 +1,13 @@
+# Production: images are pulled from GHCR; Postgres and Redis are external (DATABASE_URL / REDIS_URL in .env)
+services:
+  api:
+    image: ghcr.io/ddotsmedia/ddotsinvoice-api:${IMAGE_TAG:-latest}
+    ports: ["3001:3001"]
+    env_file: .env
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/ddotsmedia/ddotsinvoice-web:${IMAGE_TAG:-latest}
+    ports: ["3000:3000"]
+    restart: unless-stopped
+    depends_on: [api]

@@ -1,0 +1,70 @@
+{
+  "login": {
+    "title": "Sign in",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign in",
+    "error": "Invalid email or password"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "companies": "Companies",
+    "users": "Users",
+    "comingSoon": "Coming Soon",
+    "logout": "Sign out",
+    "theme": "Toggle theme"
+  },
+  "modules": {
+    "invoices": "Invoices",
+    "customers": "Customers",
+    "quotations": "Quotations",
+    "products": "Products",
+    "inventory": "Inventory",
+    "purchases": "Purchases",
+    "vendors": "Vendors",
+    "expenses": "Expenses",
+    "banking": "Banking",
+    "accounting": "Accounting",
+    "vat": "VAT Returns",
+    "reports": "Reports",
+    "payroll": "HR & Payroll"
+  },
+  "kpi": {
+    "totalInvoices": "Total Invoices",
+    "revenueMtd": "Revenue MTD",
+    "outstanding": "Outstanding",
+    "companies": "Companies"
+  },
+  "common": {
+    "name": "Name",
+    "nameAr": "Name (Arabic)",
+    "trn": "TRN",
+    "email": "Email",
+    "phone": "Phone",
+    "currency": "Currency",
+    "status": "Status",
+    "role": "Role",
+    "firstName": "First name",
+    "lastName": "Last name",
+    "active": "Active",
+    "inactive": "Inactive",
+    "empty": "No records yet",
+    "cancel": "Cancel",
+    "save": "Save",
+    "error": "Something went wrong. Please try again."
+  },
+  "companies": { "title": "Companies", "add": "Add Company" },
+  "users": { "title": "Users", "invite": "Invite User" },
+  "roles": {
+    "platform_admin": "Platform Admin",
+    "tenant_admin": "Tenant Admin",
+    "company_admin": "Company Admin",
+    "branch_manager": "Branch Manager",
+    "accountant": "Accountant",
+    "sales": "Sales",
+    "purchasing": "Purchasing",
+    "warehouse": "Warehouse",
+    "hr_payroll": "HR & Payroll",
+    "viewer": "Viewer"
+  }
+}
