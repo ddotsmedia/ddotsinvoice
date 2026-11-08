@@ -12,6 +12,14 @@ export const api = axios.create({ baseURL: BASE, withCredentials: true });
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
+  if (typeof window !== 'undefined') {
+    try {
+      const cid = localStorage.getItem('ddots.companyId');
+      if (cid) config.headers['X-Company-Id'] = cid; // honoured by the API for tenant admins only
+    } catch {
+      // storage unavailable
+    }
+  }
   return config;
 });
 

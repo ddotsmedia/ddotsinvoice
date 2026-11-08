@@ -53,8 +53,14 @@
     "save": "Save",
     "error": "Something went wrong. Please try again."
   },
-  "companies": { "title": "Companies", "add": "Add Company" },
-  "users": { "title": "Users", "invite": "Invite User" },
+  "companies": {
+    "title": "Companies",
+    "add": "Add Company"
+  },
+  "users": {
+    "title": "Users",
+    "invite": "Invite User"
+  },
   "roles": {
     "platform_admin": "Platform Admin",
     "tenant_admin": "Tenant Admin",
@@ -65,6 +71,9 @@
     "purchasing": "Purchasing",
     "warehouse": "Warehouse",
     "hr_payroll": "HR & Payroll",
-    "viewer": "Viewer"
+    "viewer": "Viewer",
+    "super_admin": "Super Admin",
+    "hr_manager": "HR Manager",
+    "payroll_manager": "Payroll Manager"
   }
 }

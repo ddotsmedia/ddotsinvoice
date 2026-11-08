@@ -53,8 +53,14 @@
     "save": "حفظ",
     "error": "حدث خطأ ما. حاول مرة أخرى."
   },
-  "companies": { "title": "الشركات", "add": "إضافة شركة" },
-  "users": { "title": "المستخدمون", "invite": "دعوة مستخدم" },
+  "companies": {
+    "title": "الشركات",
+    "add": "إضافة شركة"
+  },
+  "users": {
+    "title": "المستخدمون",
+    "invite": "دعوة مستخدم"
+  },
   "roles": {
     "platform_admin": "مدير المنصة",
     "tenant_admin": "مدير المستأجر",
@@ -65,6 +71,9 @@
     "purchasing": "مشتريات",
     "warehouse": "مستودع",
     "hr_payroll": "الموارد البشرية والرواتب",
-    "viewer": "مشاهد"
+    "viewer": "مشاهد",
+    "super_admin": "مشرف المنصة",
+    "hr_manager": "مدير الموارد البشرية",
+    "payroll_manager": "مدير الرواتب"
   }
 }

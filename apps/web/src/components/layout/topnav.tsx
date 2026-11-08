@@ -4,7 +4,10 @@ import { usePathname } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import { Bell, ChevronRight, LogOut, Menu, Moon, Search, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
-import { useAuth } from '@/lib/auth';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
+import { useAuth, type AuthUser } from '@/lib/auth';
 import { useUi } from '@/app/providers';
 import { useLabel } from '@/lib/ui-helpers';
 
@@ -26,6 +29,33 @@ function crumbs(pathname: string, L: (en: string, ar: string) => string): string
     out.push(n ? L(n[0], n[1]) : s.replace(/-/g, ' '));
   }
   return out;
+}
+
+// Tenant admins (or users without a company) pick the company they work on; stored in localStorage
+function CompanySelector({ user }: { user: AuthUser | undefined }) {
+  const qc = useQueryClient();
+  const active = useActiveCompanyId(user);
+  const show = !!user && (user.role === 'tenant_admin' || !user.companyId);
+  const list = useQuery({
+    queryKey: ['companies-selector'],
+    enabled: show,
+    queryFn: async () => (await api.get<{ items: { id: string; name: string }[] }>('/companies', { params: { limit: 100 } })).data.items,
+  });
+  if (!show) return null;
+  return (
+    <select
+      aria-label="Company"
+      className="h-9 max-w-52 rounded-lg border border-border bg-surface px-2 text-sm text-primary"
+      value={active ?? ''}
+      onChange={(e) => {
+        setStoredCompanyId(e.target.value || null);
+        void qc.invalidateQueries();
+      }}
+    >
+      <option value="">Select company…</option>
+      {list.data?.map((c) => <option key={c.id} value={c.id}>{c.name}</option>)}
+    </select>
+  );
 }
 
 export function TopNav({ onMenu }: { onMenu: () => void }) {
@@ -51,6 +81,7 @@ export function TopNav({ onMenu }: { onMenu: () => void }) {
         ))}
       </nav>
       <div className="ms-auto flex items-center gap-1">
+        <CompanySelector user={user} />
         <button type="button" aria-label="Search" className={iconBtn}><Search className="h-4 w-4" /></button>
         <button type="button" aria-label="Notifications" className={`${iconBtn} relative`}>
           <Bell className="h-4 w-4" />

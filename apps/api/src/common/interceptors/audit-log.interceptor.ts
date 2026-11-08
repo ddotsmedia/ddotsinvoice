@@ -16,6 +16,7 @@ const redact = (body: unknown): Record<string, unknown> | null => {
 
 type AuditReq = FastifyRequest & {
   user?: AccessTokenPayload;
+  activeCompanyId?: string;
   params?: Record<string, string>;
   routeOptions?: { url?: string };
 };
@@ -48,7 +49,7 @@ export class AuditLogInterceptor implements NestInterceptor {
             .insert(auditLogs)
             .values({
               tenantId: actor.tenantId,
-              companyId: actor.companyId,
+              companyId: req.activeCompanyId ?? actor.companyId,
               userId: actor.sub,
               action: `${req.method} ${route}`.slice(0, 100),
               module,
