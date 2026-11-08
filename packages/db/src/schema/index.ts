@@ -33,6 +33,14 @@ export * from './inventory_movements';
 export * from './inventory_balances';
 export * from './supplier_invoices';
 export * from './supplier_invoice_lines';
+export * from './bank_accounts';
+export * from './payment_methods';
+export * from './customer_payments';
+export * from './customer_payment_allocations';
+export * from './supplier_payments';
+export * from './supplier_payment_allocations';
+export * from './bank_transactions';
+export * from './bank_reconciliations';
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   companies: many(companies),

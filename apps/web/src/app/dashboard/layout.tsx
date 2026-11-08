@@ -30,6 +30,14 @@ const PURCHASING = [
   { href: '/dashboard/purchasing/inventory', en: 'Inventory', ar: 'المخزون' },
 ];
 
+const PAYMENTS = [
+  { href: '/dashboard/payments/bank-accounts', en: 'Bank Accounts', ar: 'الحسابات البنكية' },
+  { href: '/dashboard/payments/customer-payments', en: 'Receipts', ar: 'إيصالات العملاء' },
+  { href: '/dashboard/payments/supplier-payments', en: 'Supplier Payments', ar: 'مدفوعات الموردين' },
+  { href: '/dashboard/payments/bank-transactions', en: 'Bank Transactions', ar: 'الحركات البنكية' },
+  { href: '/dashboard/payments/reconciliations', en: 'Reconciliations', ar: 'التسويات البنكية' },
+];
+
 const INVOICING = [
   { href: '/dashboard/invoicing/customers', en: 'Customers', ar: 'العملاء' },
   { href: '/dashboard/invoicing/invoices?type=invoice', en: 'Invoices', ar: 'الفواتير' },
@@ -64,6 +72,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [accountingOpen, setAccountingOpen] = useState(pathname.startsWith('/dashboard/accounting'));
   const [invoicingOpen, setInvoicingOpen] = useState(pathname.startsWith('/dashboard/invoicing'));
   const [purchasingOpen, setPurchasingOpen] = useState(pathname.startsWith('/dashboard/purchasing'));
+  const [paymentsOpen, setPaymentsOpen] = useState(pathname.startsWith('/dashboard/payments'));
 
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : '';
 
@@ -136,6 +145,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
           {purchasingOpen &&
             PURCHASING.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className={`block rounded-md ps-6 pe-3 py-2 text-sm ${
+                  pathname.startsWith(a.href) ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {L(a.en, a.ar)}
+              </Link>
+            ))}
+          <button
+            type="button"
+            onClick={() => setPaymentsOpen((o) => !o)}
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <span>{L('Payments', 'المدفوعات')}</span>
+            <span>{paymentsOpen ? '−' : '+'}</span>
+          </button>
+          {paymentsOpen &&
+            PAYMENTS.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}

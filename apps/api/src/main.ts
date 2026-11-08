@@ -10,7 +10,10 @@ async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
   await app.register(fastifyCookie);
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
-  app.enableCors({ origin: ['http://localhost:3000', 'https://ddotsinvoice.com'], credentials: true });
+  app.enableCors({
+    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,https://ddotsinvoice.com').split(','),
+    credentials: true,
+  });
 
   const doc = SwaggerModule.createDocument(
     app,

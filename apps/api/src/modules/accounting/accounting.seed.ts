@@ -28,7 +28,7 @@ export async function seedCompanyDefaults(tx: Tx, tenantId: string, companyId: s
     })),
   );
   await tx.insert(numberSequences).values(
-    ['JE', 'INV', 'CN', 'QT', 'PO', 'GRN', 'SINV'].map((prefix) => ({ tenantId, companyId, prefix, lastNumber: 0, padLength: 5 })),
+    ['JE', 'INV', 'CN', 'QT', 'PO', 'GRN', 'SINV', 'RCPT', 'PAY', 'BTXN'].map((prefix) => ({ tenantId, companyId, prefix, lastNumber: 0, padLength: 5 })),
   );
   await tx.insert(warehouses).values({ tenantId, companyId, code: 'MAIN', nameEn: 'Main Warehouse', nameAr: 'المستودع الرئيسي', isDefault: true });
 }
