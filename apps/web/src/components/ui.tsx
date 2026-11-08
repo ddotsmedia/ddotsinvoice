@@ -4,11 +4,39 @@ import type { ReactNode } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 
 export const inputCls =
-  'w-full rounded-md border border-border bg-white px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary dark:border-slate-700 dark:bg-slate-800';
+  'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-primary outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent dark:bg-slate-800';
 export const btnCls =
-  'rounded-md bg-primary px-4 py-2 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50';
+  'inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-600 disabled:opacity-50';
 export const cardCls =
-  'rounded-xl border border-border bg-white shadow-sm dark:border-slate-800 dark:bg-slate-900';
+  'rounded-xl border border-border bg-white shadow-card dark:bg-slate-900';
+export const labelCls = 'mb-1 block text-sm font-medium text-secondary';
+export const sectionCls = 'mb-4 border-b border-border pb-2 text-base font-semibold text-primary';
+export const thCls = 'bg-surface-2 px-4 py-3 text-start text-xs font-semibold uppercase tracking-wide text-secondary';
+export const trCls = 'border-t border-border hover:bg-surface-2 dark:border-slate-800';
+
+// Pill status badge: draft / posted / partial / paid / cancelled
+const BADGE: Record<string, string> = {
+  draft: 'bg-slate-100 text-slate-600',
+  sent: 'bg-blue-50 text-blue-700',
+  posted: 'bg-blue-50 text-blue-700',
+  active: 'bg-blue-50 text-blue-700',
+  approved: 'bg-blue-50 text-blue-700',
+  partially_paid: 'bg-amber-50 text-amber-700',
+  overdue: 'bg-amber-50 text-amber-700',
+  paid: 'bg-emerald-50 text-emerald-700',
+  fully_paid: 'bg-emerald-50 text-emerald-700',
+  reconciled: 'bg-emerald-50 text-emerald-700',
+  cancelled: 'bg-red-50 text-red-700',
+  voided: 'bg-red-50 text-red-700',
+  void: 'bg-red-50 text-red-700',
+};
+export function StatusBadge({ status }: { status: string }) {
+  return (
+    <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${BADGE[status] ?? 'bg-slate-100 text-slate-600'}`}>
+      {status.replace(/_/g, ' ')}
+    </span>
+  );
+}
 
 export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
   return (

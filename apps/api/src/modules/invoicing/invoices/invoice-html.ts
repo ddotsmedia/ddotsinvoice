@@ -11,7 +11,7 @@ export interface InvoiceHtmlInput {
   lines: Line[];
 }
 
-const PRIMARY = '#1B4FBD';
+const PRIMARY = '#0A1628';
 const ACCENT = '#F59E0B';
 
 const esc = (s: unknown): string =>
@@ -58,14 +58,14 @@ body { font-family: 'Noto Sans', 'Noto Sans Arabic', sans-serif; color: #0f172a;
 .muted { color: #64748b; font-size: 10px; }
 .strong { font-weight: 700; }
 .center { text-align: center; }
-.header { border-bottom: 3px solid ${PRIMARY}; padding-bottom: 10px; margin-bottom: 12px; }
-.title { font-size: 18px; font-weight: 700; color: ${PRIMARY}; margin: 6px 0; }
+.header { background: ${PRIMARY}; color: #fff; padding: 14px 16px; border-radius: 8px; margin-bottom: 12px; }
+.title { font-size: 18px; font-weight: 700; color: ${ACCENT}; margin: 6px 0; }
 .box { border: 1px solid #e2e8f0; border-radius: 6px; padding: 8px; }
 .accent { border-inline-start: 4px solid ${ACCENT}; }
 table { width: 100%; border-collapse: collapse; margin-top: 10px; }
 th, td { border-bottom: 1px solid #e2e8f0; padding: 6px 5px; vertical-align: top; }
 th { background: ${PRIMARY}; color: #fff; font-size: 10px; text-align: start; }
-tr.alt td { background: #f8fafc; }
+tr.alt td { background: #F8FAFC; }
 .num { text-align: end; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 12px; }
 .totals td { border: none; padding: 3px 6px; }
