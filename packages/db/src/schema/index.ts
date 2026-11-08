@@ -41,6 +41,15 @@ export * from './supplier_payments';
 export * from './supplier_payment_allocations';
 export * from './bank_transactions';
 export * from './bank_reconciliations';
+export * from './departments';
+export * from './employees';
+export * from './salary_structures';
+export * from './leave_types';
+export * from './leave_balances';
+export * from './leave_requests';
+export * from './payroll_runs';
+export * from './payroll_lines';
+export * from './end_of_service';
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   companies: many(companies),

@@ -38,6 +38,14 @@ const PAYMENTS = [
   { href: '/dashboard/payments/reconciliations', en: 'Reconciliations', ar: 'التسويات البنكية' },
 ];
 
+const HR = [
+  { href: '/dashboard/hr/departments', en: 'Departments', ar: 'الأقسام' },
+  { href: '/dashboard/hr/employees', en: 'Employees', ar: 'الموظفون' },
+  { href: '/dashboard/hr/leaves', en: 'Leaves', ar: 'الإجازات' },
+  { href: '/dashboard/hr/payroll', en: 'Payroll', ar: 'الرواتب' },
+  { href: '/dashboard/hr/eos', en: 'End of Service', ar: 'نهاية الخدمة' },
+];
+
 const INVOICING = [
   { href: '/dashboard/invoicing/customers', en: 'Customers', ar: 'العملاء' },
   { href: '/dashboard/invoicing/invoices?type=invoice', en: 'Invoices', ar: 'الفواتير' },
@@ -73,6 +81,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [invoicingOpen, setInvoicingOpen] = useState(pathname.startsWith('/dashboard/invoicing'));
   const [purchasingOpen, setPurchasingOpen] = useState(pathname.startsWith('/dashboard/purchasing'));
   const [paymentsOpen, setPaymentsOpen] = useState(pathname.startsWith('/dashboard/payments'));
+  const [hrOpen, setHrOpen] = useState(pathname.startsWith('/dashboard/hr'));
 
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : '';
 
@@ -165,6 +174,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
           {paymentsOpen &&
             PAYMENTS.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className={`block rounded-md ps-6 pe-3 py-2 text-sm ${
+                  pathname.startsWith(a.href) ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {L(a.en, a.ar)}
+              </Link>
+            ))}
+          <button
+            type="button"
+            onClick={() => setHrOpen((o) => !o)}
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <span>{L('HR & Payroll', 'الموارد البشرية')}</span>
+            <span>{hrOpen ? '−' : '+'}</span>
+          </button>
+          {hrOpen &&
+            HR.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}

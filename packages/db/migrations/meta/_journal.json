@@ -36,6 +36,13 @@
       "when": 1794115831027,
       "tag": "0004_payments_banking",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794135739856,
+      "tag": "0005_payroll_hr",
+      "breakpoints": true
     }
   ]
 }

@@ -12,6 +12,7 @@ import { AccountingModule } from './modules/accounting/accounting.module';
 import { InvoicingModule } from './modules/invoicing/invoicing.module';
 import { PurchasingModule } from './purchasing/purchasing.module';
 import { PaymentsModule } from './payments/payments.module';
+import { HrModule } from './hr/hr.module';
 
 @Module({
   imports: [
@@ -28,6 +29,7 @@ import { PaymentsModule } from './payments/payments.module';
     InvoicingModule,
     PurchasingModule,
     PaymentsModule,
+    HrModule,
   ],
 })
 export class AppModule {}
