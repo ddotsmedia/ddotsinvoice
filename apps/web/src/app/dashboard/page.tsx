@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import {
+  Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, LabelList, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
+} from 'recharts';
 import { AlertCircle, Banknote, BarChart3, Clock, CreditCard, FilePlus, TrendingDown, TrendingUp, UserPlus, UserRound, Users, Wallet } from 'lucide-react';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
@@ -16,15 +18,14 @@ interface Dash {
   outstandingReceivables: string; outstandingPayables: string; cashBalance: string;
   topCustomers: { customerId: string; nameEn: string; nameAr: string; totalAmount: string }[];
 }
-interface Invoice { id: string; number: string; date: string; total: string; status: string; customerId: string }
+interface Invoice { id: string; number: string; date: string; dueDate: string | null; total: string; status: string; customerId: string }
 interface Aging { asOfDate: string; totals: { current?: string; d31_60?: string; d61_90?: string; d91_120?: string; d120plus?: string; total?: string } }
 interface PayrollRun { id: string; periodYear: number; periodMonth: number; status: string; totalGross: string; totalNet: string }
 
 const aed = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED' });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : aed.format(Number(money(String(v)).toFixed(2))));
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
-// Y axis: AED 25K / 50K / 75K / 100K
-const kTick = (v: number) => (v >= 1000 ? `AED ${Math.round(v / 1000)}K` : `AED ${Math.round(v)}`);
+const DONUT_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#F97316', '#EF4444'];
 
 /** Calendar month `offset` months back (0 = current), UTC. */
 const monthBounds = (offset: number) => {
@@ -41,6 +42,17 @@ const INVOICE_STATUS: Record<string, string> = {
   draft: 'bg-gray-400 text-white',
   overdue: 'bg-red-600 text-white',
 };
+
+// Row colour by invoice status
+const INVOICE_ROW: Record<string, string> = {
+  overdue: 'bg-red-50 hover:bg-red-100',
+  partially_paid: 'bg-amber-50 hover:bg-amber-100',
+  paid: 'bg-green-50 hover:bg-green-100',
+  posted: 'bg-white hover:bg-blue-50',
+  draft: 'bg-gray-50 hover:bg-gray-100',
+};
+// Statuses that can be past due
+const OPEN_STATUSES = ['sent', 'posted', 'partially_paid', 'overdue'];
 
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-gray-200 ${className}`} />;
@@ -76,10 +88,11 @@ function Card({ title, subtitle, action, children, className = '', padded = true
   );
 }
 
-function SectionHeader({ title }: { title: string }) {
+function SectionHeader({ title, subtitle }: { title: string; subtitle?: string }) {
   return (
     <div className="mb-6 mt-10 flex items-center gap-3">
       <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">{title}</h2>
+      {subtitle && <span className="text-xs text-gray-400">{subtitle}</span>}
       <div className="h-px flex-1 bg-gray-200" />
     </div>
   );
@@ -117,7 +130,7 @@ export default function DashboardPage() {
   const invoices = useQuery({
     queryKey: ['dash', companyId, 'invoices'],
     enabled: on,
-    queryFn: async () => (await api.get<{ items: Invoice[] }>('/invoicing/invoices', { params: { limit: 5 } })).data.items,
+    queryFn: async () => (await api.get<{ items: Invoice[] }>('/invoicing/invoices', { params: { limit: 10 } })).data.items,
   });
   const customers = useQuery({
     queryKey: ['dash', companyId, 'customers'],
@@ -164,9 +177,12 @@ export default function DashboardPage() {
   }
 
   const d = kpi.data;
+  // Last 6 months, oldest first (current month last)
   const chart = series.map((s, i) => {
     const b = monthBounds([5, 4, 3, 2, 1, 0][i]);
-    return { month: b.label, revenue: Number(s.data?.totalRevenue ?? 0), expenses: Number(s.data?.totalExpenses ?? 0) };
+    const revenue = Number(s.data?.totalRevenue ?? 0);
+    const expenses = Number(s.data?.totalExpenses ?? 0);
+    return { month: b.label, revenue, expenses, net: revenue - expenses };
   });
   const names = new Map((customers.data ?? []).map((c) => [c.id, c.name]));
 
@@ -218,34 +234,26 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <SectionHeader title={L('Analytics', 'التحليلات')} />
+        <SectionHeader title={L('Business Overview', 'نظرة عامة على الأعمال')} subtitle={L('Revenue · Expenses · Net Profit', 'الإيرادات · المصروفات · صافي الربح')} />
 
         {/* Chart 60% | Recent invoices 40% on lg */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Card title={L('Revenue vs Expenses', 'الإيرادات مقابل المصروفات')} subtitle={L('Last 6 months', 'آخر 6 أشهر')} className="lg:col-span-3">
-            {series.some((s) => s.isLoading) ? <Skeleton className="h-[300px]" /> : (
+            {series.some((s) => s.isLoading) ? <Skeleton className="h-[320px]" /> : (
               <>
-                <div className="h-[300px]">
+                <div className="h-[320px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <AreaChart data={chart}>
-                      <defs>
-                        <linearGradient id="gRev" x1="0" y1="0" x2="0" y2="1">
-                          <stop offset="0%" stopColor="#1E4FC2" stopOpacity={0.5} />
-                          <stop offset="100%" stopColor="#1E4FC2" stopOpacity={0} />
-                        </linearGradient>
-                      </defs>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" vertical={false} />
+                    <ComposedChart data={chart}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
                       <XAxis dataKey="month" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#6B7280' }} />
-                      <YAxis tickLine={false} axisLine={false} tickFormatter={kTick} tick={{ fontSize: 12, fill: '#6B7280' }} width={80} />
-                      <Tooltip formatter={(v) => aed.format(Number(v))} contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
-                      <Area type="monotone" dataKey="revenue" stroke="#1E4FC2" strokeWidth={2} fill="url(#gRev)" name={L('Revenue', 'الإيرادات')} />
-                      <Area type="monotone" dataKey="expenses" stroke="#EF4444" strokeWidth={2} strokeDasharray="6 4" fill="none" name={L('Expenses', 'المصروفات')} />
-                    </AreaChart>
+                      <YAxis tickLine={false} axisLine={false} tickFormatter={(v: number) => `AED ${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: '#6B7280' }} width={80} />
+                      <Tooltip formatter={(val, name) => [`AED ${Number(val).toLocaleString('en-AE')}`, String(name)]} contentStyle={{ borderRadius: 8, border: '1px solid #E5E7EB', boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }} />
+                      <Legend iconType="square" wrapperStyle={{ paddingTop: 12 }} />
+                      <Bar dataKey="revenue" name={L('Revenue', 'الإيرادات')} fill="#1E4FC2" radius={[4, 4, 0, 0]} />
+                      <Bar dataKey="expenses" name={L('Expenses', 'المصروفات')} fill="#EF4444" radius={[4, 4, 0, 0]} />
+                      <Line type="monotone" dataKey="net" name={L('Net Profit', 'صافي الربح')} stroke="#10B981" strokeWidth={2} dot={false} />
+                    </ComposedChart>
                   </ResponsiveContainer>
-                </div>
-                <div className="mt-4 flex flex-wrap justify-center gap-3 text-xs font-medium text-gray-600">
-                  <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1"><span className="h-2 w-2 rounded-full bg-[#1E4FC2]" />{L('Revenue', 'الإيرادات')}</span>
-                  <span className="inline-flex items-center gap-2 rounded-full bg-red-50 px-3 py-1"><span className="h-2 w-2 rounded-full bg-[#EF4444]" />{L('Expenses', 'المصروفات')}</span>
                 </div>
               </>
             )}
@@ -262,23 +270,34 @@ export default function DashboardPage() {
                       <th className="px-4 py-3 text-end">{L('Amount', 'المبلغ')}</th>
                       <th className="px-4 py-3 text-start">{L('Status', 'الحالة')}</th>
                       <th className="px-4 py-3 text-start">{L('Date', 'التاريخ')}</th>
+                      <th className="px-4 py-3 text-start">{L('Due', 'الاستحقاق')}</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {invoices.data.map((inv) => (
-                      <tr key={inv.id} className="border-b border-gray-100 transition-colors hover:bg-blue-50">
-                        <td className="px-4 py-3 font-mono text-sm font-medium text-blue-600">{inv.number}</td>
-                        <td className="max-w-28 truncate px-4 py-3 font-medium text-gray-800">{names.get(inv.customerId) ?? '—'}</td>
-                        <td className="px-4 py-3 text-end font-semibold text-gray-900" dir="ltr">{fmt(inv.total)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${INVOICE_STATUS[inv.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                            {inv.status.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-xs text-gray-500">{inv.date}</td>
-                      </tr>
-                    ))}
-                    {!invoices.data.length && <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">{L('No invoices yet', 'لا توجد فواتير بعد')}</td></tr>}
+                    {invoices.data.map((inv) => {
+                      const daysOver = inv.dueDate && OPEN_STATUSES.includes(inv.status)
+                        ? Math.floor((Date.parse(today) - Date.parse(inv.dueDate)) / 86400000)
+                        : 0;
+                      return (
+                        <tr key={inv.id} className={`border-b border-gray-100 transition-colors ${INVOICE_ROW[inv.status] ?? 'bg-white hover:bg-blue-50'}`}>
+                          <td className="px-4 py-3 font-mono text-sm font-medium text-blue-600">{inv.number}</td>
+                          <td className="max-w-28 truncate px-4 py-3 font-medium text-gray-800">{names.get(inv.customerId) ?? '—'}</td>
+                          <td className="px-4 py-3 text-end font-semibold text-gray-900" dir="ltr">{fmt(inv.total)}</td>
+                          <td className="px-4 py-3">
+                            <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${INVOICE_STATUS[inv.status] ?? 'bg-gray-100 text-gray-600'}`}>
+                              {inv.status.replace(/_/g, ' ')}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs text-gray-500">{inv.date}</td>
+                          <td className="px-4 py-3 text-xs">
+                            {daysOver > 0
+                              ? <span className="font-semibold text-red-600">{L(`${daysOver} days overdue`, `متأخرة ${daysOver} يوما`)}</span>
+                              : <span className="text-gray-500">{inv.dueDate ?? '—'}</span>}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                    {!invoices.data.length && <tr><td colSpan={6} className="px-4 py-10 text-center text-gray-400">{L('No invoices yet', 'لا توجد فواتير بعد')}</td></tr>}
                   </tbody>
                 </table>
               </div>
@@ -286,28 +305,88 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Section A — AR aging */}
+        {/* Monthly breakdown */}
+        <div className="mt-6">
+          <Card title={L('Monthly Breakdown', 'التفصيل الشهري')} padded={false}>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-xs font-medium uppercase text-gray-500">
+                  <tr>
+                    <th className="px-4 py-3 text-start">{L('Month', 'الشهر')}</th>
+                    <th className="px-4 py-3 text-end">{L('Revenue', 'الإيرادات')}</th>
+                    <th className="px-4 py-3 text-end">{L('Expenses', 'المصروفات')}</th>
+                    <th className="px-4 py-3 text-end">{L('Net', 'الصافي')}</th>
+                    <th className="px-4 py-3 text-end">{L('Invoices', 'الفواتير')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {chart.map((r, i) => {
+                    const current = i === chart.length - 1;
+                    return (
+                      <tr key={r.month} className={`border-t border-gray-100 ${current ? 'bg-blue-50 font-bold' : i % 2 ? 'bg-gray-50/50' : 'bg-white'}`}>
+                        <td className="px-4 py-2 text-gray-800">{r.month}</td>
+                        <td className="px-4 py-2 text-end font-semibold text-blue-700" dir="ltr">{fmt(r.revenue)}</td>
+                        <td className="px-4 py-2 text-end text-gray-700" dir="ltr">{fmt(r.expenses)}</td>
+                        <td className={`px-4 py-2 text-end font-semibold ${r.net >= 0 ? 'text-green-600' : 'text-red-600'}`} dir="ltr">{fmt(r.net)}</td>
+                        <td className="px-4 py-2 text-end text-gray-400">—</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        {/* Section A — AR aging: bars left, donut right */}
         <SectionHeader title={L('AR Aging', 'أعمار الذمم المدينة')} />
         <Card title={L('Receivables by days past due', 'الذمم المدينة حسب أيام التأخير')} subtitle={L(`As of ${today}`, `حتى ${today}`)}>
-          {aging.isLoading ? <Skeleton className="h-48" /> : (
-            <>
-              {agingBuckets.map((b) => {
-                const pct = agingTotal > 0 ? (b.value / agingTotal) * 100 : 0;
-                return (
-                  <div key={b.label} className="mb-3 flex items-center gap-3">
-                    <span className="w-28 shrink-0 text-xs text-gray-500">{b.label}</span>
-                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
-                      <div style={{ width: `${pct}%` }} className={`h-2 rounded-full ${b.bar}`} />
+          {aging.isLoading ? <Skeleton className="h-64" /> : (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+              <div>
+                {agingBuckets.map((b) => {
+                  const pct = agingTotal > 0 ? (b.value / agingTotal) * 100 : 0;
+                  return (
+                    <div key={b.label} className="mb-3 flex items-center gap-3">
+                      <span className="w-28 shrink-0 text-xs text-gray-500">{b.label}</span>
+                      <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                        <div style={{ width: `${pct}%` }} className={`h-2 rounded-full ${b.bar}`} />
+                      </div>
+                      <span className="w-32 text-right text-xs font-semibold text-gray-800" dir="ltr">{fmt(b.value)}</span>
+                      <span className="w-12 text-right text-xs text-gray-400">{pct.toFixed(0)}%</span>
                     </div>
-                    <span className="w-32 text-right text-xs font-semibold text-gray-800" dir="ltr">{fmt(b.value)}</span>
-                    <span className="w-12 text-right text-xs text-gray-400">{pct.toFixed(0)}%</span>
-                  </div>
-                );
-              })}
-              <div className="mt-4 border-t border-gray-100 pt-3 text-sm font-semibold text-gray-900">
-                {L('Total', 'الإجمالي')}: <span className="font-mono" dir="ltr">{fmt(agingTotal)}</span>
+                  );
+                })}
+                <div className="mt-4 border-t border-gray-100 pt-3 text-sm font-semibold text-gray-900">
+                  {L('Total', 'الإجمالي')}: <span className="font-mono" dir="ltr">{fmt(agingTotal)}</span>
+                </div>
               </div>
-            </>
+
+              <div>
+                <div className="relative h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={agingBuckets.map((b) => ({ name: b.label, value: b.value }))} dataKey="value" nameKey="name" innerRadius={50} outerRadius={80} stroke="none">
+                        {agingBuckets.map((_, i) => <Cell key={i} fill={DONUT_COLORS[i]} />)}
+                      </Pie>
+                      <Tooltip formatter={(v) => aed.format(Number(v))} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xs text-gray-500">{L('Total', 'الإجمالي')}</span>
+                    <span className="font-mono text-sm font-bold text-gray-900" dir="ltr">{`AED ${Math.round(agingTotal / 1000)}K`}</span>
+                  </div>
+                </div>
+                <ul className="mt-2 flex flex-wrap justify-center gap-x-4 gap-y-2 text-xs text-gray-600">
+                  {agingBuckets.map((b, i) => (
+                    <li key={b.label} className="inline-flex items-center gap-2">
+                      <span className="h-2.5 w-2.5 rounded-full" style={{ background: DONUT_COLORS[i] }} />
+                      {b.label}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
           )}
         </Card>
 
