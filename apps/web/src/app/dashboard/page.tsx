@@ -98,7 +98,7 @@ export default function DashboardPage() {
   const customers = useQuery({
     queryKey: ['dash', companyId, 'customers'],
     enabled: on,
-    queryFn: async () => (await api.get<{ items: { id: string; name: string }[] }>('/invoicing/customers', { params: { limit: 200 } })).data.items,
+    queryFn: async () => (await api.get<{ items: { id: string; name: string }[] }>('/invoicing/customers', { params: { limit: 100 } })).data.items,
   });
   const aging = useQuery({
     queryKey: ['dash', companyId, 'aging', today],
