@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { ComponentType, ReactNode } from 'react';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { Area, AreaChart, Bar, BarChart, CartesianGrid, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import { AlertCircle, Banknote, Clock, TrendingDown, TrendingUp, UserRound, Wallet } from 'lucide-react';
+import { AlertCircle, Banknote, BarChart3, Clock, CreditCard, FilePlus, TrendingDown, TrendingUp, UserPlus, UserRound, Users, Wallet } from 'lucide-react';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -73,6 +73,15 @@ function Card({ title, subtitle, action, children, className = '', padded = true
       </header>
       <div className={padded ? 'p-6' : ''}>{children}</div>
     </section>
+  );
+}
+
+function SectionHeader({ title }: { title: string }) {
+  return (
+    <div className="mb-6 mt-10 flex items-center gap-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">{title}</h2>
+      <div className="h-px flex-1 bg-gray-200" />
+    </div>
   );
 }
 
@@ -160,19 +169,30 @@ export default function DashboardPage() {
     return { month: b.label, revenue: Number(s.data?.totalRevenue ?? 0), expenses: Number(s.data?.totalExpenses ?? 0) };
   });
   const names = new Map((customers.data ?? []).map((c) => [c.id, c.name]));
-  const top = (ytd.data?.topCustomers ?? []).slice(0, 5).map((c) => {
-    const name = L(c.nameEn, c.nameAr);
-    return { name: name.length > 20 ? `${name.slice(0, 20)}…` : name, amount: Number(c.totalAmount) };
-  });
+
+  // Section A — AR aging (API buckets: current = 0–30 days past due)
   const t = aging.data?.totals ?? {};
-  const agingRows = [
-    { label: L('Current (0–30 days)', 'حالية (0–30 يوما)'), value: t.current, color: '#10B981' },
-    { label: L('31–60 days', '31–60 يوما'), value: t.d31_60, color: '#F59E0B' },
-    { label: L('61–90 days', '61–90 يوما'), value: t.d61_90, color: '#F97316' },
-    { label: L('91–120 days', '91–120 يوما'), value: t.d91_120, color: '#EF4444' },
-    { label: L('Over 120 days', 'أكثر من 120 يوما'), value: t.d120plus, color: '#991B1B' },
+  const agingBuckets = [
+    { label: L('Current (0–30 days)', 'حالية (0–30 يوما)'), value: Number(t.current ?? 0), bar: 'bg-green-500' },
+    { label: L('31–60 days', '31–60 يوما'), value: Number(t.d31_60 ?? 0), bar: 'bg-amber-500' },
+    { label: L('61–90 days', '61–90 يوما'), value: Number(t.d61_90 ?? 0), bar: 'bg-orange-500' },
+    { label: L('91–120 days', '91–120 يوما'), value: Number(t.d91_120 ?? 0), bar: 'bg-red-500' },
+    { label: L('Over 120 days', 'أكثر من 120 يوما'), value: Number(t.d120plus ?? 0), bar: 'bg-red-700' },
   ];
   const agingTotal = Number(t.total ?? 0);
+
+  // Section B — top customers (year to date)
+  const topAll = ytd.data?.topCustomers ?? [];
+  const topSum = topAll.reduce((s, c) => s + Number(c.totalAmount), 0);
+  const topFive = topAll.slice(0, 5).map((c) => {
+    const name = L(c.nameEn, c.nameAr);
+    return { name, short: name.length > 18 ? `${name.slice(0, 18)}…` : name, amount: Number(c.totalAmount) };
+  });
+
+  // Section C — payroll & HR (from latest payroll run + active employee count)
+  const latestGross = Number(payroll.data?.[0]?.totalGross ?? 0);
+  const empCount = Number(employees.data ?? 0);
+  const avgSalary = empCount > 0 ? latestGross / empCount : 0;
 
   return (
     <div className="-m-4 min-h-screen bg-gray-100 p-4 md:-m-6 md:p-6">
@@ -198,7 +218,7 @@ export default function DashboardPage() {
           )}
         </div>
 
-        <div className="mb-6 mt-10 flex items-center gap-3"><h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">{L('Analytics', 'التحليلات')}</h2><div className="h-px flex-1 bg-gray-200" /></div>
+        <SectionHeader title={L('Analytics', 'التحليلات')} />
 
         {/* Chart 60% | Recent invoices 40% on lg */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
@@ -266,26 +286,52 @@ export default function DashboardPage() {
           </Card>
         </div>
 
-        {/* Row 4 */}
-        <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-2">
-          <Card title={L('Top Customers', 'أفضل العملاء')} subtitle={L('Year to date', 'منذ بداية السنة')}>
-            {ytd.isLoading ? <Skeleton className="h-64" /> : top.length === 0 ? (
-              <div className="py-10 text-center text-sm text-gray-400">{L('No records yet', 'لا توجد سجلات بعد')}</div>
+        {/* Section A — AR aging */}
+        <SectionHeader title={L('AR Aging', 'أعمار الذمم المدينة')} />
+        <Card title={L('Receivables by days past due', 'الذمم المدينة حسب أيام التأخير')} subtitle={L(`As of ${today}`, `حتى ${today}`)}>
+          {aging.isLoading ? <Skeleton className="h-48" /> : (
+            <>
+              {agingBuckets.map((b) => {
+                const pct = agingTotal > 0 ? (b.value / agingTotal) * 100 : 0;
+                return (
+                  <div key={b.label} className="mb-3 flex items-center gap-3">
+                    <span className="w-28 shrink-0 text-xs text-gray-500">{b.label}</span>
+                    <div className="h-2 flex-1 overflow-hidden rounded-full bg-gray-200">
+                      <div style={{ width: `${pct}%` }} className={`h-2 rounded-full ${b.bar}`} />
+                    </div>
+                    <span className="w-32 text-right text-xs font-semibold text-gray-800" dir="ltr">{fmt(b.value)}</span>
+                    <span className="w-12 text-right text-xs text-gray-400">{pct.toFixed(0)}%</span>
+                  </div>
+                );
+              })}
+              <div className="mt-4 border-t border-gray-100 pt-3 text-sm font-semibold text-gray-900">
+                {L('Total', 'الإجمالي')}: <span className="font-mono" dir="ltr">{fmt(agingTotal)}</span>
+              </div>
+            </>
+          )}
+        </Card>
+
+        {/* Section B — top customers */}
+        <SectionHeader title={L('Top Customers', 'أفضل العملاء')} />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+          <Card title={L('Revenue by Customer', 'الإيرادات حسب العميل')} subtitle={L('Year to date', 'منذ بداية السنة')}>
+            {ytd.isLoading ? <Skeleton className="h-[220px]" /> : topFive.length === 0 ? (
+              <div className="py-10 text-center text-sm text-gray-400">{L('No customer data', 'لا توجد بيانات عملاء')}</div>
             ) : (
-              <div className="h-64">
+              <div className="h-[220px]">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={top} layout="vertical" margin={{ left: 8, right: 90 }}>
+                  <BarChart data={topFive.map((c) => ({ name: c.short, amount: c.amount }))} layout="vertical" margin={{ left: 8, right: 90 }}>
                     <defs>
-                      <linearGradient id="barGrad" x1="0" y1="0" x2="1" y2="0">
+                      <linearGradient id="customerGradient" x1="0" y1="0" x2="1" y2="0">
                         <stop offset="0%" stopColor="#1E4FC2" />
                         <stop offset="100%" stopColor="#6366F1" />
                       </linearGradient>
                     </defs>
-                    <XAxis type="number" hide />
-                    <YAxis type="category" dataKey="name" width={150} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#374151' }} />
-                    <Tooltip formatter={(v) => aed.format(Number(v))} />
-                    <Bar dataKey="amount" fill="url(#barGrad)" radius={[0, 6, 6, 0]} barSize={18}>
-                      <LabelList dataKey="amount" position="right" formatter={(v: unknown) => aed.format(Number(v))} />
+                    <XAxis type="number" tickLine={false} axisLine={false} tickFormatter={(v: number) => `AED ${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 12, fill: '#6B7280' }} />
+                    <YAxis type="category" dataKey="name" width={130} tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: '#374151' }} />
+                    <Tooltip formatter={(v) => `AED ${Number(v).toLocaleString('en-AE')}`} />
+                    <Bar dataKey="amount" fill="url(#customerGradient)" radius={[0, 6, 6, 0]} barSize={18}>
+                      <LabelList dataKey="amount" position="right" formatter={(v: unknown) => `AED ${Number(v).toLocaleString('en-AE')}`} />
                     </Bar>
                   </BarChart>
                 </ResponsiveContainer>
@@ -293,67 +339,72 @@ export default function DashboardPage() {
             )}
           </Card>
 
-          <Card title={L('Aging Summary', 'ملخص الأعمار')} subtitle={L('Receivables by days past due', 'الذمم المدينة حسب أيام التأخير')}>
-            {aging.isLoading ? <Skeleton className="h-64" /> : (
-              <ul className="space-y-4">
-                {agingRows.map((r) => {
-                  const v = Number(r.value ?? 0);
-                  const pct = agingTotal > 0 ? (v / agingTotal) * 100 : 0;
+          <Card title={L('Customer Rankings', 'ترتيب العملاء')}>
+            {ytd.isLoading ? <Skeleton className="h-[220px]" /> : topFive.length === 0 ? (
+              <div className="py-10 text-center text-sm text-gray-400">{L('No customer data', 'لا توجد بيانات عملاء')}</div>
+            ) : (
+              <div>
+                {topFive.map((c, i) => {
+                  const pct = topSum > 0 ? (c.amount / topSum) * 100 : 0;
                   return (
-                    <li key={r.label}>
-                      <div className="mb-1 flex justify-between text-sm">
-                        <span className="text-gray-600">{r.label}</span>
-                        <span className="font-mono font-medium text-gray-900" dir="ltr">{fmt(v)}</span>
+                    <div key={`${c.name}-${i}`} className="mb-4 flex items-center gap-3">
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-blue-100 text-xs font-bold text-blue-700">{i + 1}</span>
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate text-sm font-medium text-gray-900">{c.name}</p>
+                        <p className="text-xs text-gray-500" dir="ltr">{`AED ${c.amount.toLocaleString('en-AE')}`}</p>
                       </div>
-                      <div className="h-2 overflow-hidden rounded-full bg-gray-100">
-                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: r.color }} />
-                      </div>
-                    </li>
+                      <span className="text-xs font-semibold text-blue-600">{pct.toFixed(1)}%</span>
+                    </div>
                   );
                 })}
-                <li className="border-t border-gray-100 pt-3 text-sm font-semibold text-gray-900">
-                  {L('Total', 'الإجمالي')}: <span className="font-mono" dir="ltr">{fmt(agingTotal)}</span>
-                </li>
-              </ul>
+              </div>
             )}
           </Card>
         </div>
 
-        {/* Row 5 */}
-        <div className="mt-6">
-          <Card title={L('Payroll Overview', 'نظرة عامة على الرواتب')} action={{ href: '/dashboard/hr/payroll', label: L('View all', 'عرض الكل') }} padded={false}>
-            {!payroll.data ? <Skeleton className="m-6 h-32" /> : (
-              <div className="mt-4 overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-xs uppercase tracking-wider text-gray-500">
-                    <tr>
-                      <th className="px-4 py-3 text-start">{L('Period', 'الفترة')}</th>
-                      <th className="px-4 py-3 text-end">{L('Employees', 'الموظفون')}</th>
-                      <th className="px-4 py-3 text-end">{L('Gross', 'الإجمالي')}</th>
-                      <th className="px-4 py-3 text-end">{L('Net', 'الصافي')}</th>
-                      <th className="px-4 py-3 text-start">{L('Status', 'الحالة')}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {payroll.data.map((p) => (
-                      <tr key={p.id} className="border-b border-gray-100 transition-colors hover:bg-blue-50">
-                        <td className="px-4 py-3">{`${String(p.periodMonth).padStart(2, '0')}/${p.periodYear}`}</td>
-                        <td className="px-4 py-3 text-end text-gray-400">—</td>
-                        <td className="px-4 py-3 text-end font-mono text-xs" dir="ltr">{fmt(p.totalGross)}</td>
-                        <td className="px-4 py-3 text-end font-mono text-xs" dir="ltr">{fmt(p.totalNet)}</td>
-                        <td className="px-4 py-3">
-                          <span className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${INVOICE_STATUS[p.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                            {p.status.replace(/_/g, ' ')}
-                          </span>
-                        </td>
-                      </tr>
-                    ))}
-                    {!payroll.data.length && <tr><td colSpan={5} className="px-4 py-10 text-center text-gray-400">{L('No payroll runs yet', 'لا توجد مسيرات رواتب بعد')}</td></tr>}
-                  </tbody>
-                </table>
+        {/* Section C — payroll & HR */}
+        <SectionHeader title={L('Payroll & HR', 'الرواتب والموارد البشرية')} />
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          {[
+            { label: L('Total Payroll (latest run)', 'إجمالي الرواتب (آخر مسير)'), value: fmt(latestGross), icon: Banknote },
+            { label: L('Active Employees', 'الموظفون النشطون'), value: String(empCount), icon: Users },
+            { label: L('Avg Salary', 'متوسط الراتب'), value: fmt(avgSalary), icon: TrendingUp },
+          ].map((c) => {
+            const Icon = c.icon;
+            return (
+              <div key={c.label} className="flex items-center justify-between rounded-2xl border-l-4 border-indigo-400 bg-white p-5 shadow-sm">
+                <div>
+                  <div className="text-xs uppercase text-gray-500">{c.label}</div>
+                  <div className="mt-1 text-xl font-bold text-gray-900" dir="ltr">{c.value}</div>
+                </div>
+                <Icon className="h-5 w-5 text-indigo-400" />
               </div>
-            )}
-          </Card>
+            );
+          })}
+        </div>
+
+        {/* Section D — quick actions */}
+        <SectionHeader title={L('Quick Actions', 'إجراءات سريعة')} />
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[
+            { href: '/dashboard/invoicing/invoices/new', icon: FilePlus, label: L('New Invoice', 'فاتورة جديدة'), sub: L('Create invoice', 'إنشاء فاتورة') },
+            { href: '/dashboard/invoicing/customers', icon: UserPlus, label: L('Add Customer', 'إضافة عميل'), sub: L('Customers list', 'قائمة العملاء') },
+            { href: '/dashboard/payments/customer-payments/new', icon: CreditCard, label: L('Record Payment', 'تسجيل دفعة'), sub: L('Log receipt', 'تسجيل إيصال') },
+            { href: '/dashboard/reports', icon: BarChart3, label: L('View Reports', 'عرض التقارير'), sub: L('Financial reports', 'التقارير المالية') },
+          ].map((a) => {
+            const Icon = a.icon;
+            return (
+              <Link key={a.href} href={a.href} className="flex cursor-pointer items-center gap-3 rounded-xl bg-white p-4 shadow-sm transition hover:shadow-md">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-blue-50 text-blue-600">
+                  <Icon className="h-5 w-5" />
+                </span>
+                <span>
+                  <span className="block text-sm font-semibold text-gray-800">{a.label}</span>
+                  <span className="block text-xs text-gray-500">{a.sub}</span>
+                </span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </div>
