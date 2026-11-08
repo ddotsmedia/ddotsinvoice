@@ -50,6 +50,8 @@ export * from './leave_requests';
 export * from './payroll_runs';
 export * from './payroll_lines';
 export * from './end_of_service';
+export * from './budgets';
+export * from './budget_lines';
 
 export const tenantsRelations = relations(tenants, ({ many }) => ({
   companies: many(companies),

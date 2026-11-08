@@ -43,6 +43,13 @@
       "when": 1794135739856,
       "tag": "0005_payroll_hr",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794137667268,
+      "tag": "0006_budgets",
+      "breakpoints": true
     }
   ]
 }

@@ -38,6 +38,11 @@ const PAYMENTS = [
   { href: '/dashboard/payments/reconciliations', en: 'Reconciliations', ar: 'التسويات البنكية' },
 ];
 
+const REPORTING = [
+  { href: '/dashboard/reports', en: 'Reports', ar: 'التقارير' },
+  { href: '/dashboard/budgets', en: 'Budgets', ar: 'الموازنات' },
+];
+
 const HR = [
   { href: '/dashboard/hr/departments', en: 'Departments', ar: 'الأقسام' },
   { href: '/dashboard/hr/employees', en: 'Employees', ar: 'الموظفون' },
@@ -82,6 +87,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const [purchasingOpen, setPurchasingOpen] = useState(pathname.startsWith('/dashboard/purchasing'));
   const [paymentsOpen, setPaymentsOpen] = useState(pathname.startsWith('/dashboard/payments'));
   const [hrOpen, setHrOpen] = useState(pathname.startsWith('/dashboard/hr'));
+  const [reportingOpen, setReportingOpen] = useState(pathname.startsWith('/dashboard/reports') || pathname.startsWith('/dashboard/budgets'));
 
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : '';
 
@@ -194,6 +200,26 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
           </button>
           {hrOpen &&
             HR.map((a) => (
+              <Link
+                key={a.href}
+                href={a.href}
+                className={`block rounded-md ps-6 pe-3 py-2 text-sm ${
+                  pathname.startsWith(a.href) ? 'bg-primary text-white' : 'hover:bg-slate-100 dark:hover:bg-slate-800'
+                }`}
+              >
+                {L(a.en, a.ar)}
+              </Link>
+            ))}
+          <button
+            type="button"
+            onClick={() => setReportingOpen((o) => !o)}
+            className="flex w-full items-center justify-between rounded-md px-3 py-2 text-sm hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <span>{L('Reporting', 'التقارير والتحليل')}</span>
+            <span>{reportingOpen ? '−' : '+'}</span>
+          </button>
+          {reportingOpen &&
+            REPORTING.map((a) => (
               <Link
                 key={a.href}
                 href={a.href}
