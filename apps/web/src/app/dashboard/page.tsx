@@ -35,29 +35,28 @@ const monthBounds = (offset: number) => {
 };
 
 const INVOICE_STATUS: Record<string, string> = {
-  paid: 'bg-green-100 text-green-700',
-  posted: 'bg-blue-100 text-blue-700',
-  partially_paid: 'bg-amber-100 text-amber-700',
-  draft: 'bg-gray-100 text-gray-600',
-  overdue: 'bg-red-100 text-red-700',
+  paid: 'bg-green-600 text-white',
+  posted: 'bg-blue-600 text-white',
+  partially_paid: 'bg-amber-500 text-white',
+  draft: 'bg-gray-400 text-white',
+  overdue: 'bg-red-600 text-white',
 };
 
 function Skeleton({ className = '' }: { className?: string }) {
   return <div className={`animate-pulse rounded-xl bg-gray-200 ${className}`} />;
 }
 
-function Kpi({ label, value, accent, icon: Icon, tone, trend }: { label: string; value: string; accent: string; icon: ComponentType<{ className?: string }>; tone?: string; trend: string }) {
+function Kpi({ label, value, gradient, icon: Icon, trend }: { label: string; value: string; gradient: string; icon: ComponentType<{ className?: string }>; trend: string }) {
   return (
-    <div className="relative overflow-hidden rounded-xl border border-gray-100 bg-white p-5 pl-6 shadow-md">
-      <span className="absolute inset-y-0 left-0 w-1 rounded-l-xl" style={{ background: accent }} />
+    <div className="relative overflow-hidden rounded-2xl p-6 text-white shadow-lg" style={{ background: gradient }}>
       <div className="flex items-start justify-between">
-        <div className="text-xs font-medium uppercase tracking-wider text-gray-500">{label}</div>
-        <div className="flex h-10 w-10 items-center justify-center rounded-full" style={{ background: `${accent}1a`, color: accent }}>
+        <div className="text-xs font-semibold uppercase tracking-widest text-white/70">{label}</div>
+        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/20 text-white">
           <Icon className="h-5 w-5" />
         </div>
       </div>
-      <div className={`mt-2 text-2xl font-bold ${tone ?? 'text-gray-900'}`} dir="ltr">{value}</div>
-      <div className="mt-2 text-xs font-medium" style={{ color: accent }}>{trend}</div>
+      <div className="mb-1 mt-2 text-3xl font-bold text-white" dir="ltr">{value}</div>
+      <div className="flex items-center gap-1 text-xs text-white/80">{trend}</div>
     </div>
   );
 }
@@ -65,10 +64,10 @@ function Kpi({ label, value, accent, icon: Icon, tone, trend }: { label: string;
 function Card({ title, subtitle, action, children, className = '', padded = true }: { title: string; subtitle?: string; action?: { href: string; label: string }; children: ReactNode; className?: string; padded?: boolean }) {
   return (
     <section className={`overflow-hidden rounded-xl bg-white shadow-md ${className}`}>
-      <header className="flex items-start justify-between px-6 pt-5">
+      <header className="flex items-start justify-between border-b border-gray-100 bg-white px-6 py-4">
         <div>
-          <h2 className="text-lg font-semibold text-gray-800">{title}</h2>
-          {subtitle && <p className="text-sm text-gray-500">{subtitle}</p>}
+          <h2 className="text-base font-semibold text-gray-900">{title}</h2>
+          {subtitle && <p className="text-xs text-gray-500">{subtitle}</p>}
         </div>
         {action && <Link href={action.href} className="text-sm font-medium text-blue-600 hover:underline">{action.label}</Link>}
       </header>
@@ -156,7 +155,6 @@ export default function DashboardPage() {
   }
 
   const d = kpi.data;
-  const profit = d ? Number(d.netProfit) : 0;
   const chart = series.map((s, i) => {
     const b = monthBounds([5, 4, 3, 2, 1, 0][i]);
     return { month: b.label, revenue: Number(s.data?.totalRevenue ?? 0), expenses: Number(s.data?.totalExpenses ?? 0) };
@@ -177,7 +175,7 @@ export default function DashboardPage() {
   const agingTotal = Number(t.total ?? 0);
 
   return (
-    <div className="-m-4 min-h-screen bg-gray-50 p-4 md:-m-6 md:p-6">
+    <div className="-m-4 min-h-screen bg-gray-100 p-4 md:-m-6 md:p-6">
       <div className="mx-auto max-w-7xl">
         <header>
           <h1 className="text-2xl font-bold text-gray-900">{L('Dashboard', 'لوحة المعلومات')}</h1>
@@ -188,26 +186,26 @@ export default function DashboardPage() {
         <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
           {!d ? Array.from({ length: 6 }).map((_, i) => <Skeleton key={i} className="h-32" />) : (
             <>
-              <Kpi label={L('Revenue (this month)', 'إيرادات الشهر')} value={fmt(d.totalRevenue)} accent="#1E4FC2" icon={TrendingUp} trend={L('↑ This month', '↑ هذا الشهر')} />
-              <Kpi label={L('Receivables', 'الذمم المدينة')} value={fmt(d.outstandingReceivables)} accent="#F59E0B" icon={Clock} trend={L('↑ Outstanding', '↑ مستحقة')} />
-              <Kpi label={L('Net Profit (this month)', 'صافي الربح')} value={fmt(d.netProfit)} accent="#10B981" icon={Banknote} tone={profit >= 0 ? 'text-emerald-600' : 'text-red-600'} trend={L('↑ This month', '↑ هذا الشهر')} />
-              <Kpi label={L('Cash Balance', 'النقد')} value={fmt(d.cashBalance)} accent="#6366F1" icon={Wallet} trend={L('↑ Current', '↑ الحالي')} />
-              <Kpi label={L('Payables', 'الذمم الدائنة')} value={fmt(d.outstandingPayables)} accent="#EF4444" icon={TrendingDown} trend={L('↑ Outstanding', '↑ مستحقة')} />
+              <Kpi label={L('Revenue (this month)', 'إيرادات الشهر')} value={fmt(d.totalRevenue)} gradient="linear-gradient(135deg, #1E4FC2, #3B72F0)" icon={TrendingUp} trend={L('↑ This month', '↑ هذا الشهر')} />
+              <Kpi label={L('Receivables', 'الذمم المدينة')} value={fmt(d.outstandingReceivables)} gradient="linear-gradient(135deg, #D97706, #F59E0B)" icon={Clock} trend={L('↑ Outstanding', '↑ مستحقة')} />
+              <Kpi label={L('Net Profit (this month)', 'صافي الربح')} value={fmt(d.netProfit)} gradient="linear-gradient(135deg, #059669, #10B981)" icon={Banknote} trend={L('↑ This month', '↑ هذا الشهر')} />
+              <Kpi label={L('Cash Balance', 'النقد')} value={fmt(d.cashBalance)} gradient="linear-gradient(135deg, #4F46E5, #818CF8)" icon={Wallet} trend={L('↑ Current', '↑ الحالي')} />
+              <Kpi label={L('Payables', 'الذمم الدائنة')} value={fmt(d.outstandingPayables)} gradient="linear-gradient(135deg, #DC2626, #F87171)" icon={TrendingDown} trend={L('↑ Outstanding', '↑ مستحقة')} />
             </>
           )}
           {employees.data === undefined ? <Skeleton className="h-32" /> : (
-            <Kpi label={L('Employees', 'الموظفون')} value={String(employees.data)} accent="#8B5CF6" icon={UserRound} trend={L('↑ Active', '↑ نشطون')} />
+            <Kpi label={L('Employees', 'الموظفون')} value={String(employees.data)} gradient="linear-gradient(135deg, #7C3AED, #A78BFA)" icon={UserRound} trend={L('↑ Active', '↑ نشطون')} />
           )}
         </div>
 
-        <div className="mb-6 mt-8 border-t border-gray-200" />
+        <div className="mb-6 mt-10 flex items-center gap-3"><h2 className="text-sm font-semibold uppercase tracking-wider text-gray-500">{L('Analytics', 'التحليلات')}</h2><div className="h-px flex-1 bg-gray-200" /></div>
 
         {/* Chart 60% | Recent invoices 40% on lg */}
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-5">
           <Card title={L('Revenue vs Expenses', 'الإيرادات مقابل المصروفات')} subtitle={L('Last 6 months', 'آخر 6 أشهر')} className="lg:col-span-3">
-            {series.some((s) => s.isLoading) ? <Skeleton className="h-[280px]" /> : (
+            {series.some((s) => s.isLoading) ? <Skeleton className="h-[300px]" /> : (
               <>
-                <div className="h-[280px]">
+                <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <AreaChart data={chart}>
                       <defs>
