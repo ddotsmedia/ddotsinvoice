@@ -3,7 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
 import { and, eq, gt, isNull } from 'drizzle-orm';
-import { Db, refreshTokens, users } from '@ddotsinvoice/db';
+import { companies, Db, refreshTokens, tenants, users } from '@ddotsinvoice/db';
 import { AccessTokenPayload, UserRole } from '@ddotsinvoice/shared';
 import { ADMIN_DB } from '../../infra/drizzle.module';
 
@@ -28,6 +28,22 @@ export class AuthService {
       .limit(1);
     if (!user || !(await argon2.verify(user.passwordHash, password).catch(() => false))) {
       throw new UnauthorizedException('Invalid credentials');
+    }
+    if (user.tenantId) {
+      const [tenant] = await this.db
+        .select({ isActive: tenants.isActive })
+        .from(tenants)
+        .where(and(eq(tenants.id, user.tenantId), isNull(tenants.deletedAt)))
+        .limit(1);
+      if (!tenant?.isActive) throw new UnauthorizedException('Account suspended');
+    }
+    if (user.companyId) {
+      const [company] = await this.db
+        .select({ isActive: companies.isActive })
+        .from(companies)
+        .where(and(eq(companies.id, user.companyId), isNull(companies.deletedAt)))
+        .limit(1);
+      if (company && !company.isActive) throw new UnauthorizedException('Company suspended');
     }
     await this.db.update(users).set({ lastLoginAt: new Date() }).where(eq(users.id, user.id));
     return this.issue(user);

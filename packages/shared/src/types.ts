@@ -1,4 +1,5 @@
 export enum UserRole {
+  SUPER_ADMIN = 'super_admin',
   PLATFORM_ADMIN = 'platform_admin',
   TENANT_ADMIN = 'tenant_admin',
   COMPANY_ADMIN = 'company_admin',
@@ -8,6 +9,8 @@ export enum UserRole {
   PURCHASING = 'purchasing',
   WAREHOUSE = 'warehouse',
   HR_PAYROLL = 'hr_payroll',
+  HR_MANAGER = 'hr_manager',
+  PAYROLL_MANAGER = 'payroll_manager',
   VIEWER = 'viewer',
 }
 

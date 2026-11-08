@@ -57,6 +57,13 @@
       "when": 1794139360201,
       "tag": "0007_security",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794225760000,
+      "tag": "0008_admin",
+      "breakpoints": true
     }
   ]
 }

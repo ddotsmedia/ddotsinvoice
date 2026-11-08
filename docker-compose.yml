@@ -44,5 +44,16 @@ services:
     ports: ["3000:3000"]
     depends_on: [api]
 
+  super-admin:
+    build:
+      context: .
+      dockerfile: apps/super-admin/Dockerfile
+    ports:
+      - "4200:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:4101
+      NODE_ENV: development
+    depends_on: [api]
+
 volumes:
   pgdata:

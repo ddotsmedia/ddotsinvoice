@@ -13,6 +13,8 @@ export * from './companies';
 export * from './branches';
 export * from './users';
 export * from './audit_logs';
+export * from './permissions';
+export * from './platform_settings';
 export * from './accounts';
 export * from './fiscal_years';
 export * from './journal_entries';

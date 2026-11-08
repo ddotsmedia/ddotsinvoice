@@ -1,6 +1,7 @@
 packages:
   - apps/api
   - apps/web
+  - apps/super-admin
   - packages/db
   - packages/shared
   - packages/money

@@ -6,6 +6,7 @@ import { branches } from './branches';
 export const roleEnum = pgEnum('user_role', [
   'platform_admin', 'tenant_admin', 'company_admin', 'branch_manager', 'accountant',
   'sales', 'purchasing', 'warehouse', 'hr_payroll', 'viewer',
+  'super_admin', 'hr_manager', 'payroll_manager',
 ]);
 
 export const users = pgTable('users', {

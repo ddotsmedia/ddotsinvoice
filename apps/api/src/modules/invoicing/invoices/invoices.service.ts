@@ -10,6 +10,14 @@ import { AccessTokenPayload } from '@ddotsinvoice/shared';
 import { DB } from '../../../infra/drizzle.module';
 import { requireCompany, requireTenant } from '../../../common/tenant';
 import { LineIn, nextNumber, openFyFor } from '../../accounting/accounting.util';
+
+// Sequence key stays 'INV'; the displayed prefix comes from company settings.invoicePrefix (admin-configurable)
+async function displayNumber(tx: Tx, companyId: string, seqPrefix: string, number: string): Promise<string> {
+  if (seqPrefix !== 'INV') return number;
+  const [co] = await tx.select({ settings: companies.settings }).from(companies).where(eq(companies.id, companyId)).limit(1);
+  const custom = (co?.settings as { invoicePrefix?: string } | null)?.invoicePrefix;
+  return custom ? number.replace(/^INV-/, `${custom}-`) : number;
+}
 import { postJournal, reverseJournal } from '../../accounting/journal-posting';
 import { calcLine, calcTotals, CalcLine, LineInput } from '../invoice-calc';
 import { PdfService } from './pdf.service';
@@ -212,7 +220,7 @@ export class InvoicesService {
       const terms = dto.paymentTerms ?? customer.paymentTerms;
       const fy = await openFyFor(tx, companyId, dto.date);
       const prefix = dto.type === 'quote' ? 'QT' : 'INV';
-      const number = await nextNumber(tx, companyId, prefix, dto.date.slice(0, 4));
+      const number = await displayNumber(tx, companyId, prefix, await nextNumber(tx, companyId, prefix, dto.date.slice(0, 4)));
       const [inv] = await tx
         .insert(invoices)
         .values({
@@ -347,7 +355,7 @@ export class InvoicesService {
       const rows = await this.lines(tx, id);
       const date = today();
       const fy = await openFyFor(tx, companyId, date);
-      const number = await nextNumber(tx, companyId, 'INV', date.slice(0, 4));
+      const number = await displayNumber(tx, companyId, 'INV', await nextNumber(tx, companyId, 'INV', date.slice(0, 4)));
       const [inv] = await tx
         .insert(invoices)
         .values({

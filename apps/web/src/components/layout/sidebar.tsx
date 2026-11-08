@@ -7,7 +7,7 @@ import * as Collapsible from '@radix-ui/react-collapsible';
 import {
   Banknote, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange, ChevronDown, CreditCard, FileMinus,
   FileText, LayoutDashboard, Landmark, ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale,
-  Table as TableIcon, Target, Truck, UserRound, Users, Wallet, ArrowLeftRight,
+  Table as TableIcon, Target, Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText,
 } from 'lucide-react';
 import { useLabel } from '@/lib/ui-helpers';
 import { useAuth } from '@/lib/auth';
@@ -82,6 +82,17 @@ const GROUPS: Group[] = [
   },
 ];
 
+// Shown only to company_admin / tenant_admin (see visibleGroups)
+const ADMIN_GROUP: Group = {
+  key: 'admin', en: 'Admin', ar: 'الإدارة', icon: Shield,
+  items: [
+    { href: '/dashboard/admin/company', en: 'Company Settings', ar: 'إعدادات الشركة', icon: Building2 },
+    { href: '/dashboard/admin/users', en: 'User Management', ar: 'إدارة المستخدمين', icon: Users },
+    { href: '/dashboard/admin/roles', en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات', icon: Shield },
+    { href: '/dashboard/admin/audit-log', en: 'Audit Log', ar: 'سجل التدقيق', icon: ScrollText },
+  ],
+};
+
 export function Sidebar() {
   const L = useLabel();
   const pathname = usePathname();
@@ -89,6 +100,8 @@ export function Sidebar() {
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
     Object.fromEntries(GROUPS.map((g) => [g.key, g.items.some((i) => pathname.startsWith(i.href.split('?')[0]))])),
   );
+  const isAdmin = user?.role === 'company_admin' || user?.role === 'tenant_admin';
+  const visibleGroups = isAdmin ? [...GROUPS, ADMIN_GROUP] : GROUPS;
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : '';
 
   return (
@@ -108,10 +121,10 @@ export function Sidebar() {
           <LayoutDashboard className="h-4 w-4" />
           {L('Dashboard', 'الرئيسية')}
         </Link>
-        {GROUPS.map((g) => {
+        {visibleGroups.map((g) => {
           const GroupIcon = g.icon;
           return (
-            <Collapsible.Root key={g.key} open={open[g.key]} onOpenChange={(v) => setOpen((s) => ({ ...s, [g.key]: v }))}>
+            <Collapsible.Root key={g.key} open={open[g.key] ?? false} onOpenChange={(v) => setOpen((s) => ({ ...s, [g.key]: v }))}>
               <Collapsible.Trigger className="mt-3 flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted hover:text-sidebar-text">
                 <span className="flex items-center gap-2"><GroupIcon className="h-3.5 w-3.5" />{L(g.en, g.ar)}</span>
                 <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open[g.key] ? 'rotate-180' : ''}`} />

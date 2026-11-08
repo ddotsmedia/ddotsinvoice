@@ -1,5 +1,10 @@
 import { Module } from '@nestjs/common';
+import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { PermissionsGuard } from './common/guards/permissions.guard';
+import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
+import { SuperAdminModule } from './super-admin/super-admin.module';
+import { AdminModule } from './admin/admin.module';
 import { DrizzleModule } from './infra/drizzle.module';
 import { RedisModule } from './infra/redis.module';
 import { HealthModule } from './modules/health/health.module';
@@ -32,6 +37,12 @@ import { ReportsModule } from './reports/reports.module';
     PaymentsModule,
     HrModule,
     ReportsModule,
+    SuperAdminModule,
+    AdminModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: PermissionsGuard },
+    { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],
 })
 export class AppModule {}
