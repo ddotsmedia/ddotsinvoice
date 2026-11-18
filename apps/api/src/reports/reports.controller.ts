@@ -8,6 +8,7 @@ import { RolesGuard } from '../modules/auth/roles.guard';
 import { CurrentUser } from '../modules/auth/current-user.decorator';
 import { FinancialReportsService } from './financial.service';
 import { ManagementReportsService, defaultRange } from './management.service';
+import { AnalyticsReportsService } from './analytics.service';
 import { BudgetsService, CreateBudgetDto, BudgetQueryDto } from './budgets.service';
 import { todayIso } from './report.util';
 
@@ -32,6 +33,7 @@ export class ReportsController {
   constructor(
     private readonly fin: FinancialReportsService,
     private readonly mgmt: ManagementReportsService,
+    private readonly analytics: AnalyticsReportsService,
   ) {}
 
   @Get('balance-sheet')
@@ -93,6 +95,33 @@ export class ReportsController {
   dashboard(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
     const r = defaultRange();
     return this.mgmt.dashboard(a, q.fromDate ?? r.from, q.toDate ?? r.to);
+  }
+
+  @Get('pl-monthly')
+  plMonthly(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
+    return this.analytics.plMonthly(a, q.toDate ?? todayIso());
+  }
+
+  @Get('revenue-breakdown')
+  revenueBreakdown(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
+    const r = defaultRange();
+    return this.analytics.revenueBreakdown(a, q.fromDate ?? r.from, q.toDate ?? r.to);
+  }
+
+  @Get('invoice-monthly')
+  invoiceMonthly(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
+    return this.analytics.invoiceMonthly(a, q.toDate ?? todayIso());
+  }
+
+  @Get('invoice-summary')
+  invoiceSummary(@CurrentUser() a: AccessTokenPayload) {
+    return this.analytics.invoiceSummary(a);
+  }
+
+  @Get('payment-methods')
+  paymentMethods(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
+    const r = defaultRange();
+    return this.analytics.paymentMethods(a, q.fromDate ?? r.from, q.toDate ?? r.to);
   }
 }
 

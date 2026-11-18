@@ -21,11 +21,20 @@ interface Dash {
 interface Invoice { id: string; number: string; date: string; dueDate: string | null; total: string; status: string; customerId: string }
 interface Aging { asOfDate: string; totals: { current?: string; d31_60?: string; d61_90?: string; d91_120?: string; d120plus?: string; total?: string } }
 interface PayrollRun { id: string; periodYear: number; periodMonth: number; status: string; totalGross: string; totalNet: string }
+interface InvoiceSummary { forecast: string; totalValue: string }
+interface PaymentMethods { items: { method: string; count: number; amount: string }[]; total: string }
 
 const aed = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED' });
 const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? '—' : aed.format(Number(money(String(v)).toFixed(2))));
 const ymd = (d: Date) => d.toISOString().slice(0, 10);
 const DONUT_COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#F97316', '#EF4444'];
+// Payment methods supported by the schema (no "online" method exists yet)
+const PAY_METHODS = [
+  { key: 'cash', en: 'Cash', ar: 'نقد', color: '#3B82F6' },
+  { key: 'bank_transfer', en: 'Bank Transfer', ar: 'تحويل بنكي', color: '#10B981' },
+  { key: 'card', en: 'Card', ar: 'بطاقة', color: '#F59E0B' },
+  { key: 'cheque', en: 'Cheque', ar: 'شيك', color: '#8B5CF6' },
+];
 
 /** Calendar month `offset` months back (0 = current), UTC. */
 const monthBounds = (offset: number) => {
@@ -152,6 +161,16 @@ export default function DashboardPage() {
     enabled: on,
     queryFn: async () => (await api.get<{ total: number }>('/hr/employees', { params: { limit: 1, status: 'active' } })).data.total,
   });
+  const summary = useQuery({
+    queryKey: ['dash', companyId, 'invoice-summary'],
+    enabled: on,
+    queryFn: async () => (await api.get<InvoiceSummary>('/reports/invoice-summary')).data,
+  });
+  const payMethods = useQuery({
+    queryKey: ['dash', companyId, 'payment-methods', ytdFrom, today],
+    enabled: on,
+    queryFn: async () => (await api.get<PaymentMethods>('/reports/payment-methods', { params: { fromDate: ytdFrom, toDate: today } })).data,
+  });
 
   if (!user) return <Skeleton className="h-40" />;
   if (!companyId) {
@@ -231,6 +250,9 @@ export default function DashboardPage() {
           )}
           {employees.data === undefined ? <Skeleton className="h-32" /> : (
             <Kpi label={L('Employees', 'الموظفون')} value={String(employees.data)} gradient="linear-gradient(135deg, #7C3AED, #A78BFA)" icon={UserRound} trend={L('↑ Active', '↑ نشطون')} />
+          )}
+          {summary.data === undefined ? <Skeleton className="h-32" /> : (
+            <Kpi label={L('FORECASTED REVENUE', 'الإيرادات المتوقعة')} value={fmt(summary.data.forecast)} gradient="linear-gradient(135deg, #6D28D9, #C084FC)" icon={TrendingUp} trend={L('↑ Draft + sent invoices', '↑ مسودات + فواتير مرسلة')} />
           )}
         </div>
 
@@ -388,6 +410,50 @@ export default function DashboardPage() {
               </div>
             </div>
           )}
+        </Card>
+
+        {/* Payment analytics — payment method split (year to date) */}
+        <SectionHeader title={L('Payment Analytics', 'تحليل المدفوعات')} />
+        <Card title={L('Payment Methods', 'طرق الدفع')} subtitle={L('Year to date', 'منذ بداية السنة')}>
+          {payMethods.isLoading ? <Skeleton className="h-[240px]" /> : (() => {
+            const items = payMethods.data?.items ?? [];
+            const total = Number(payMethods.data?.total ?? 0);
+            const rows = PAY_METHODS.map((m) => {
+              const amount = Number(items.find((i) => i.method === m.key)?.amount ?? 0);
+              return { name: L(m.en, m.ar), amount, pct: total > 0 ? (amount / total) * 100 : 0, color: m.color };
+            });
+            return (
+              <div className="grid grid-cols-1 items-center gap-6 lg:grid-cols-2">
+                <div className="relative h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie data={rows} dataKey="amount" nameKey="name" innerRadius={55} outerRadius={85} stroke="none">
+                        {rows.map((r) => <Cell key={r.name} fill={r.color} />)}
+                      </Pie>
+                      <Tooltip formatter={(v) => aed.format(Number(v))} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+                    <span className="text-xs text-gray-500">{L('Total', 'الإجمالي')}</span>
+                    <span className="font-mono text-sm font-bold text-gray-900" dir="ltr">{fmt(total)}</span>
+                  </div>
+                </div>
+                <ul className="space-y-3">
+                  {rows.map((r) => (
+                    <li key={r.name} className="flex items-center justify-between gap-3 text-sm">
+                      <span className="inline-flex items-center gap-2 text-gray-700">
+                        <span className="h-2.5 w-2.5 rounded-full" style={{ background: r.color }} />
+                        {r.name}
+                      </span>
+                      <span className="font-mono text-gray-900" dir="ltr">
+                        {fmt(r.amount)} <span className="ms-2 text-xs text-gray-400">{r.pct.toFixed(1)}%</span>
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            );
+          })()}
         </Card>
 
         {/* Section B — top customers */}

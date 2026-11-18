@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import {
-  Banknote, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange, ChevronDown, CreditCard, FileMinus,
+  Banknote, BarChart2, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange, ChevronDown, CreditCard, FileMinus,
   FileText, LayoutDashboard, Landmark, ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale,
   Table as TableIcon, Target, Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText,
 } from 'lucide-react';
@@ -120,6 +120,15 @@ export function Sidebar() {
         >
           <LayoutDashboard className="h-4 w-4" />
           {L('Dashboard', 'الرئيسية')}
+        </Link>
+        <Link
+          href="/dashboard/reports/overview"
+          className={`flex items-center gap-3 rounded-md border-s-[3px] px-3 py-2 text-sm ${
+            pathname.startsWith('/dashboard/reports/overview') ? 'border-accent bg-brand-500 text-white' : 'border-transparent hover:bg-sidebar-hover'
+          }`}
+        >
+          <BarChart2 className="h-4 w-4" />
+          {L('Reports', 'التقارير')}
         </Link>
         {visibleGroups.map((g) => {
           const GroupIcon = g.icon;
