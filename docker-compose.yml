@@ -48,10 +48,12 @@ services:
     build:
       context: .
       dockerfile: apps/super-admin/Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:3001
     ports:
       - "4200:3000"
     environment:
-      NEXT_PUBLIC_API_URL: http://localhost:4101
+      NEXT_PUBLIC_API_URL: http://localhost:3001
       NODE_ENV: development
     depends_on: [api]
 
