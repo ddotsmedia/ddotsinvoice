@@ -70,5 +70,5 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=${{ vars.NEXT_PUBLIC_API_URL }}
+            NEXT_PUBLIC_API_URL=https://ddotsinvoice.com/api
           tags: ghcr.io/ddotsmedia/ddotsinvoice-web:latest
