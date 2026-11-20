@@ -41,7 +41,7 @@ jobs:
         env:
           DATABASE_URL: postgresql://ddots:ddots@localhost:5432/ddotsinvoice_test
           DATABASE_ADMIN_URL: postgresql://ddots:ddots@localhost:5432/ddotsinvoice_test
-      - name: Dependency audit (high and critical)
+      - name: Dependency audit (critical)
         run: pnpm audit --audit-level=critical
 
   build-docker:
@@ -72,3 +72,45 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://ddotsinvoice.com/api
           tags: ghcr.io/ddotsmedia/ddotsinvoice-web:latest
+      - uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/super-admin/Dockerfile
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_URL=https://ddotsinvoice.com/api
+          tags: ghcr.io/ddotsmedia/ddotsinvoice-super-admin:latest
+
+  deploy:
+    needs: build-docker
+    if: github.ref == 'refs/heads/master' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    # Only touches /opt/ddotsinvoice. Never prune images/containers host-wide:
+    # the VPS runs 30+ other projects.
+    env:
+      APP_DIR: /opt/ddotsinvoice
+    steps:
+      - uses: actions/checkout@v4
+      - name: Copy production compose file to VPS
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          source: docker-compose.prod.yml
+          target: ${{ env.APP_DIR }}
+          overwrite: true
+      - name: Pull and restart ddotsinvoice containers
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: APP_DIR
+          script: |
+            set -e
+            cd "$APP_DIR"
+            test -f .env || { echo "Missing $APP_DIR/.env"; exit 1; }
+            docker compose -p ddotsinvoice -f docker-compose.prod.yml pull
+            docker compose -p ddotsinvoice -f docker-compose.prod.yml up -d
+            docker compose -p ddotsinvoice -f docker-compose.prod.yml ps
