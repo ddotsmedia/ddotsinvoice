@@ -109,7 +109,7 @@ jobs:
           script: |
             set -e
             NGINX_CONF=/etc/nginx/sites-available/ddotsinvoice
-            cp "$APP_DIR/docker-compose.prod.yml" "$APP_DIR/docker-compose.prod.yml"  # no-op, ensure dir exists
+            mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
             # Write config only if it has changed
             if ! diff -q "$APP_DIR/nginx-ddotsinvoice.conf" "$NGINX_CONF" >/dev/null 2>&1; then
               cp "$APP_DIR/nginx-ddotsinvoice.conf" "$NGINX_CONF"
