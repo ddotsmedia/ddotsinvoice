@@ -140,7 +140,7 @@ jobs:
             for PORT in 4300 4301 4302; do
               USERS=$(ss -tlnp "sport = :$PORT" 2>/dev/null | grep LISTEN || true)
               if [ -n "$USERS" ]; then
-                DOCKER_CTR=$(docker ps --filter "publish=127.0.0.1::$PORT" --format "{{.Names}}" 2>/dev/null || true)
+                DOCKER_CTR=$(docker ps --filter "label=com.docker.compose.project=ddotsinvoice" --format "{{.Names}}" 2>/dev/null | head -1 || true)
                 if [ -n "$DOCKER_CTR" ]; then
                   echo "  $PORT → ddotsinvoice container '$DOCKER_CTR' (will stop)"
                 else
