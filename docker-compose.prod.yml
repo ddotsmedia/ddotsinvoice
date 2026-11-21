@@ -1,23 +1,24 @@
 # Production: images are pulled from GHCR; Postgres and Redis are external (DATABASE_URL / REDIS_URL in .env)
 # Lives on the VPS at /opt/ddotsinvoice. Host nginx terminates TLS and proxies to the loopback ports below.
-# Host ports: web 4100, api 4101, super-admin 4200 (all bound to 127.0.0.1 only).
+# Host ports: web 4300, api 4301, super-admin 4302 (all bound to 127.0.0.1 only).
+# NOTE: 4100/4101 are taken by AyurConnect PM2 on this VPS.
 name: ddotsinvoice
 
 services:
   api:
     image: ghcr.io/ddotsmedia/ddotsinvoice-api:${IMAGE_TAG:-latest}
-    ports: ["127.0.0.1:4101:3001"]
+    ports: ["127.0.0.1:4301:3001"]
     env_file: .env
     restart: unless-stopped
 
   web:
     image: ghcr.io/ddotsmedia/ddotsinvoice-web:${IMAGE_TAG:-latest}
-    ports: ["127.0.0.1:4100:3000"]
+    ports: ["127.0.0.1:4300:3000"]
     restart: unless-stopped
     depends_on: [api]
 
   super-admin:
     image: ghcr.io/ddotsmedia/ddotsinvoice-super-admin:${IMAGE_TAG:-latest}
-    ports: ["127.0.0.1:4200:3000"]
+    ports: ["127.0.0.1:4302:3000"]
     restart: unless-stopped
     depends_on: [api]
