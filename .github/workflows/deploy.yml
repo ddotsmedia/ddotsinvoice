@@ -112,8 +112,37 @@ jobs:
             set -e
             cd "$APP_DIR"
             test -f .env || { echo "Missing $APP_DIR/.env"; exit 1; }
+
+            # --- Port pre-flight: show what's using our ports ---
+            echo "=== Port status before deploy ==="
+            for PORT in 4100 4101 4200; do
+              USERS=$(ss -tlnp "sport = :$PORT" 2>/dev/null | grep -v Netid || true)
+              if [ -n "$USERS" ]; then
+                DOCKER_CTR=$(docker ps --filter "publish=127.0.0.1::$PORT" --format "{{.Names}}" 2>/dev/null || true)
+                if [ -n "$DOCKER_CTR" ]; then
+                  echo "  $PORT → ddotsinvoice container '$DOCKER_CTR' (will stop)"
+                else
+                  echo "  $PORT → IN USE by another process:"
+                  echo "$USERS"
+                  echo "ERROR: Port $PORT is taken by a non-ddotsinvoice process. Aborting deploy."
+                  exit 1
+                fi
+              else
+                echo "  $PORT → free"
+              fi
+            done
+
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -p ddotsinvoice -f docker-compose.prod.yml pull
             docker compose -p ddotsinvoice -f docker-compose.prod.yml down --remove-orphans
+
+            # --- Verify ports are free after down ---
+            for PORT in 4100 4101 4200; do
+              if ss -tlnp "sport = :$PORT" 2>/dev/null | grep -q LISTEN; then
+                echo "ERROR: Port $PORT still in use after stopping containers. Manual investigation needed."
+                exit 1
+              fi
+            done
+
             docker compose -p ddotsinvoice -f docker-compose.prod.yml up -d
             docker compose -p ddotsinvoice -f docker-compose.prod.yml ps
