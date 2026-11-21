@@ -114,5 +114,6 @@ jobs:
             test -f .env || { echo "Missing $APP_DIR/.env"; exit 1; }
             echo "$GHCR_TOKEN" | docker login ghcr.io -u "$GHCR_USER" --password-stdin
             docker compose -p ddotsinvoice -f docker-compose.prod.yml pull
+            docker compose -p ddotsinvoice -f docker-compose.prod.yml down --remove-orphans
             docker compose -p ddotsinvoice -f docker-compose.prod.yml up -d
             docker compose -p ddotsinvoice -f docker-compose.prod.yml ps
