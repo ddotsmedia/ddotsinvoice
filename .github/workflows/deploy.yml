@@ -116,7 +116,7 @@ jobs:
             # --- Port pre-flight: show what's using our ports ---
             echo "=== Port status before deploy ==="
             for PORT in 4300 4301 4302; do
-              USERS=$(ss -tlnp "sport = :$PORT" 2>/dev/null | grep -v Netid || true)
+              USERS=$(ss -tlnp "sport = :$PORT" 2>/dev/null | grep LISTEN || true)
               if [ -n "$USERS" ]; then
                 DOCKER_CTR=$(docker ps --filter "publish=127.0.0.1::$PORT" --format "{{.Names}}" 2>/dev/null || true)
                 if [ -n "$DOCKER_CTR" ]; then
