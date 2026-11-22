@@ -68,7 +68,7 @@ jobs:
           file: apps/web/Dockerfile
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=https://ddotsinvoice.com/api
+            NEXT_PUBLIC_API_URL=https://ddinvoice.com/api
           tags: ghcr.io/ddotsmedia/ddotsinvoice-web:latest
       - uses: docker/build-push-action@v5
         with:
@@ -76,7 +76,7 @@ jobs:
           file: apps/super-admin/Dockerfile
           push: true
           build-args: |
-            NEXT_PUBLIC_API_URL=https://ddotsinvoice.com/api
+            NEXT_PUBLIC_API_URL=https://ddinvoice.com/api
           tags: ghcr.io/ddotsmedia/ddotsinvoice-super-admin:latest
 
   deploy:
