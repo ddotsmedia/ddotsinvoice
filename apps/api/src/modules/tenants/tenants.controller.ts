@@ -21,7 +21,9 @@ export class TenantsController {
     return this.tenants.list(q);
   }
 
+  // Platform owner (super_admin) may create tenants in addition to platform_admin
   @Post()
+  @Roles(UserRole.SUPER_ADMIN, UserRole.PLATFORM_ADMIN)
   create(@Body() dto: CreateTenantDto) {
     return this.tenants.create(dto);
   }
