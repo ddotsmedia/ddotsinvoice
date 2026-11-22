@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { PermissionsGuard } from './common/guards/permissions.guard';
 import { AuditLogInterceptor } from './common/interceptors/audit-log.interceptor';
 import { SuperAdminModule } from './super-admin/super-admin.module';
@@ -23,6 +24,11 @@ import { ReportsModule } from './reports/reports.module';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, envFilePath: ['.env', '../../.env'] }),
+    ThrottlerModule.forRoot([
+      { name: 'auth-login', ttl: 15 * 60 * 1000, limit: 5 },     // 5 per 15 min (login)
+      { name: 'auth-register', ttl: 60 * 60 * 1000, limit: 3 },   // 3 per hour (register)
+      { name: 'global', ttl: 60 * 1000, limit: 120 },             // 120 per min everywhere else
+    ]),
     DrizzleModule,
     RedisModule,
     HealthModule,
@@ -41,6 +47,7 @@ import { ReportsModule } from './reports/reports.module';
     AdminModule,
   ],
   providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
     { provide: APP_GUARD, useClass: PermissionsGuard },
     { provide: APP_INTERCEPTOR, useClass: AuditLogInterceptor },
   ],

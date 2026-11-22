@@ -1,4 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
@@ -10,7 +11,7 @@ import { CurrentUser } from './current-user.decorator';
 const COOKIE = 'refresh_token';
 const COOKIE_OPTS = {
   httpOnly: true,
-  sameSite: 'lax' as const,
+  sameSite: 'strict' as const,
   secure: process.env.NODE_ENV === 'production',
   path: '/',
   // Shared across subdomains (e.g. .ddinvoice.com) so admin.ddinvoice.com can read the cookie set by the API host
@@ -25,6 +26,7 @@ export class AuthController {
 
   @Post('register-tenant')
   @HttpCode(201)
+  @Throttle({ 'auth-register': { ttl: 60 * 60 * 1000, limit: 3 } })
   async registerTenant(@Body() dto: RegisterTenantDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.registerTenant(dto);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
@@ -33,6 +35,7 @@ export class AuthController {
 
   @Post('login')
   @HttpCode(200)
+  @Throttle({ 'auth-login': { ttl: 15 * 60 * 1000, limit: 5 } })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.login(dto.email.toLowerCase(), dto.password);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
@@ -41,6 +44,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
+  @Throttle({ 'auth-login': { ttl: 15 * 60 * 1000, limit: 5 } })
   async refresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
     const token = req.cookies[COOKIE];
     if (!token) throw new UnauthorizedException();
