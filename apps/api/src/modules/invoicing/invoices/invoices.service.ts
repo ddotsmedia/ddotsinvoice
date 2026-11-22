@@ -299,8 +299,16 @@ export class InvoicesService {
       }
       const customer = await this.customerOf(tx, companyId, inv.customerId);
       const rows = await this.lines(tx, id);
-      if (rows.some((l) => l.vatType === 'standard') && !customer.trn) {
-        throw new UnprocessableEntityException('Customer TRN is required for standard-rated VAT invoices');
+      if (rows.some((l) => l.vatType === 'standard')) {
+        if (!customer.trn) {
+          throw new UnprocessableEntityException('Customer TRN is required for standard-rated VAT invoices');
+        }
+        const [co] = await tx.select({ trn: companies.trn }).from(companies).where(eq(companies.id, companyId)).limit(1);
+        if (!co?.trn) {
+          throw new UnprocessableEntityException(
+            'Company TRN is required for VAT-registered invoices. Please add your TRN in company settings before creating tax invoices.',
+          );
+        }
       }
       const jl = await this.salesLines(tx, companyId, customer, rows, M.money(inv.exchangeRate), false);
       const jeId = await postJournal(tx, {

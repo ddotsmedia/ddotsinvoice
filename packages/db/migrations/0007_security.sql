@@ -2,7 +2,8 @@
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'ddots_app') THEN
-    CREATE ROLE ddots_app LOGIN PASSWORD 'AppPass2026!' NOSUPERUSER NOCREATEDB NOCREATEROLE;
+    -- Password set via deployment secret: run scripts/setup-db-roles.sh
+    CREATE ROLE ddots_app LOGIN PASSWORD 'changeme' NOSUPERUSER NOCREATEDB NOCREATEROLE;
   END IF;
 END$$;--> statement-breakpoint
 GRANT USAGE ON SCHEMA public TO ddots_app;--> statement-breakpoint

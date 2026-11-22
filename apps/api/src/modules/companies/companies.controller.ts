@@ -23,6 +23,7 @@ export class CompaniesController {
   }
 
   @Post()
+  @Roles(...rolesAtOrAbove(UserRole.COMPANY_ADMIN))
   create(@CurrentUser() actor: AccessTokenPayload, @Body() dto: CreateCompanyDto) {
     return this.companies.create(actor, dto);
   }
