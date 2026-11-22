@@ -1,4 +1,4 @@
-import { Inject, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, Logger, NotFoundException, OnApplicationBootstrap } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
@@ -9,7 +9,7 @@ import { companies, Db, invoices, payrollRuns, platformSettings, purchaseOrders,
 import { AccessTokenPayload, UserRole } from '@ddotsinvoice/shared';
 import { ADMIN_DB } from '../infra/drizzle.module';
 import { REDIS } from '../infra/redis.module';
-import { SearchQueryDto, UpdatePlatformSettingsDto } from './super-admin.dto';
+import { BootstrapTenantAdminDto, SearchQueryDto, UpdatePlatformSettingsDto } from './super-admin.dto';
 
 export const IMPERSONATION_TTL_S = 900;
 const POSTED_STATUSES = ['sent', 'posted', 'paid', 'partially_paid', 'overdue'] as const;
@@ -249,6 +249,52 @@ export class SuperAdminService implements OnApplicationBootstrap {
       expiresIn: IMPERSONATION_TTL_S,
       target: { id: target.id, email: target.email, role: target.role },
     };
+  }
+
+  /**
+   * Creates the first company_admin for a tenant that has no active admin yet.
+   * Returns a generated temporary password (shown once; the caller must rotate it).
+   */
+  async bootstrapTenantAdmin(tenantId: string, dto: BootstrapTenantAdminDto) {
+    const [t] = await this.db
+      .select({ id: tenants.id })
+      .from(tenants)
+      .where(and(eq(tenants.id, tenantId), isNull(tenants.deletedAt)))
+      .limit(1);
+    if (!t) throw new NotFoundException('Tenant not found');
+
+    const [existingAdmin] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(
+        and(
+          eq(users.tenantId, tenantId),
+          isNull(users.deletedAt),
+          inArray(users.role, [UserRole.TENANT_ADMIN, UserRole.COMPANY_ADMIN]),
+        ),
+      )
+      .limit(1);
+    if (existingAdmin) throw new ConflictException('Tenant already has an admin user');
+
+    const pw = tempPassword();
+    try {
+      const [created] = await this.db
+        .insert(users)
+        .values({
+          tenantId,
+          companyId: null,
+          email: dto.email.toLowerCase(),
+          firstName: dto.firstName,
+          lastName: dto.lastName,
+          role: UserRole.COMPANY_ADMIN,
+          passwordHash: await argon2.hash(pw),
+        })
+        .returning({ id: users.id, email: users.email });
+      return { userId: created.id, email: created.email, tempPassword: pw };
+    } catch (e) {
+      if ((e as { code?: string }).code === '23505') throw new ConflictException('Email already registered');
+      throw e;
+    }
   }
 
   async listCompanies(q: SearchQueryDto) {

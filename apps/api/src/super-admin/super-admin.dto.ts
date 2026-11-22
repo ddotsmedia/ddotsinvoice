@@ -1,4 +1,4 @@
-import { IsBoolean, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min } from 'class-validator';
+import { IsBoolean, IsEmail, IsIn, IsInt, IsNumber, IsOptional, IsString, Max, MaxLength, Min, MinLength } from 'class-validator';
 import { Type } from 'class-transformer';
 import { UserRole } from '@ddotsinvoice/shared';
 import { PageQueryDto } from '../common/tenant';
@@ -27,4 +27,10 @@ export class UpdatePlatformSettingsDto {
   @IsOptional() @IsString() @MaxLength(255) smtpUser?: string;
   @IsOptional() @IsString() @MaxLength(255) smtpPass?: string;
   @IsOptional() @IsBoolean() maintenanceMode?: boolean;
+}
+
+export class BootstrapTenantAdminDto {
+  @IsString() @MinLength(1) @MaxLength(100) firstName!: string;
+  @IsString() @MinLength(1) @MaxLength(100) lastName!: string;
+  @IsEmail() @MaxLength(255) email!: string;
 }

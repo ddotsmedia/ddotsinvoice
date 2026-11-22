@@ -5,7 +5,7 @@ import { JwtAuthGuard } from '../modules/auth/jwt-auth.guard';
 import { Roles } from '../modules/auth/roles.decorator';
 import { RolesGuard } from '../modules/auth/roles.guard';
 import { SuperAdminService } from './super-admin.service';
-import { ChangeRoleDto, SearchQueryDto, SuspendDto, UpdatePlatformSettingsDto } from './super-admin.dto';
+import { BootstrapTenantAdminDto, ChangeRoleDto, SearchQueryDto, SuspendDto, UpdatePlatformSettingsDto } from './super-admin.dto';
 
 @ApiTags('super-admin')
 @ApiBearerAuth()
@@ -48,6 +48,11 @@ export class SuperAdminController {
   @Post('tenants/:id/impersonate')
   impersonate(@Param('id', ParseUUIDPipe) id: string) {
     return this.svc.impersonate(id);
+  }
+
+  @Post('tenants/:id/bootstrap-admin')
+  bootstrapAdmin(@Param('id', ParseUUIDPipe) id: string, @Body() dto: BootstrapTenantAdminDto) {
+    return this.svc.bootstrapTenantAdmin(id, dto);
   }
 
   @Get('companies')
