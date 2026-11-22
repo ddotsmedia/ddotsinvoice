@@ -13,7 +13,7 @@ import { CreateCompanyDto, UpdateCompanyDto } from './companies.dto';
 @ApiBearerAuth()
 @Controller('companies')
 @UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(...rolesAtOrAbove(UserRole.TENANT_ADMIN))
+@Roles(...rolesAtOrAbove(UserRole.COMPANY_ADMIN))
 export class CompaniesController {
   constructor(private readonly companies: CompaniesService) {}
 
@@ -23,7 +23,6 @@ export class CompaniesController {
   }
 
   @Post()
-  @Roles(...rolesAtOrAbove(UserRole.COMPANY_ADMIN))
   create(@CurrentUser() actor: AccessTokenPayload, @Body() dto: CreateCompanyDto) {
     return this.companies.create(actor, dto);
   }
@@ -43,6 +42,7 @@ export class CompaniesController {
   }
 
   @Delete(':id')
+  @Roles(...rolesAtOrAbove(UserRole.TENANT_ADMIN))
   remove(@CurrentUser() actor: AccessTokenPayload, @Param('id', ParseUUIDPipe) id: string) {
     return this.companies.remove(actor, id);
   }
