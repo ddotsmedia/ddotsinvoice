@@ -81,6 +81,9 @@ jobs:
 
   deploy:
     needs: build-docker
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
     if: github.ref == 'refs/heads/master' && github.event_name == 'push'
     runs-on: ubuntu-latest
     # Only touches /opt/ddotsinvoice. Never prune images/containers host-wide:
