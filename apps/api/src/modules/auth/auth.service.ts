@@ -1,4 +1,4 @@
-import { Inject, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, Inject, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
@@ -72,6 +72,30 @@ export class AuthService {
     await this.db
       .delete(refreshTokens)
       .where(and(eq(refreshTokens.userId, userId), eq(refreshTokens.tokenHash, tokenHash)));
+  }
+
+  async registerTenant(dto: { tenantName: string; firstName: string; lastName: string; email: string; password: string }) {
+    const email = dto.email.toLowerCase();
+    // Check email uniqueness
+    const [existing] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
+    if (existing) throw new ConflictException('Email already in use');
+
+    const slug = dto.tenantName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 100) + '-' + Math.random().toString(36).slice(2, 7);
+    const passwordHash = await argon2.hash(dto.password);
+
+    // Create tenant + admin user in a transaction
+    const [tenant] = await this.db.insert(tenants).values({ slug, name: dto.tenantName, plan: 'starter', isActive: true }).returning();
+    const [user] = await this.db.insert(users).values({
+      tenantId: tenant.id,
+      email,
+      passwordHash,
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+      role: 'company_admin',
+      isActive: true,
+    }).returning();
+
+    return this.issue(user);
   }
 
   async me(userId: string) {

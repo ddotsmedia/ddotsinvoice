@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useTranslations } from 'next-intl';
@@ -57,6 +58,10 @@ export default function LoginPage() {
             {t('submit')}
           </button>
         </form>
+        <p className="mt-4 text-center text-sm text-slate-500">
+          No account?{' '}
+          <Link href="/register" className="text-blue-600 hover:underline">Start Free Trial</Link>
+        </p>
       </div>
     </main>
   );

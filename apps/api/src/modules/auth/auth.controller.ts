@@ -3,7 +3,7 @@ import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
 import { AuthService, hashToken } from './auth.service';
-import { LoginDto } from './auth.dto';
+import { LoginDto, RegisterTenantDto } from './auth.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 
@@ -22,6 +22,14 @@ const COOKIE_OPTS = {
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
+
+  @Post('register-tenant')
+  @HttpCode(201)
+  async registerTenant(@Body() dto: RegisterTenantDto, @Res({ passthrough: true }) res: FastifyReply) {
+    const { accessToken, refreshToken, user } = await this.auth.registerTenant(dto);
+    res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    return { accessToken, user };
+  }
 
   @Post('login')
   @HttpCode(200)

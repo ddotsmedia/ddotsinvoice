@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ const stripEmpty = (v: Record<string, unknown>) =>
 export default function CompaniesPage() {
   const t = useTranslations();
   const qc = useQueryClient();
+  const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const list = useQuery({
@@ -35,11 +37,13 @@ export default function CompaniesPage() {
   } = useForm<CompanyForm>({ resolver: zodResolver(companySchema), defaultValues: { currency: Currency.AED } });
 
   const create = useMutation({
-    mutationFn: async (v: CompanyForm) => (await api.post('/companies', stripEmpty(v))).data,
-    onSuccess: () => {
+    mutationFn: async (v: CompanyForm) => (await api.post<{ id: string }>('/companies', stripEmpty(v))).data,
+    onSuccess: (company) => {
       void qc.invalidateQueries({ queryKey: ['companies'] });
       reset();
       setOpen(false);
+      // After first company, prompt to create an invoice
+      router.push(`/dashboard/invoicing?company=${company.id}&new=1`);
     },
   });
 
@@ -52,33 +56,48 @@ export default function CompaniesPage() {
         </button>
       </div>
 
-      <div className={`${cardCls} overflow-x-auto`}>
-        <table className="w-full text-start text-sm">
-          <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800">
-            <tr>
-              <th className="px-4 py-3 text-start font-medium">{t('common.name')}</th>
-              <th className="px-4 py-3 text-start font-medium">{t('common.trn')}</th>
-              <th className="px-4 py-3 text-start font-medium">{t('common.currency')}</th>
-              <th className="px-4 py-3 text-start font-medium">{t('common.status')}</th>
-            </tr>
-          </thead>
-          <tbody>
-            {list.data?.items.map((c) => (
-              <tr key={c.id} className="border-t border-border dark:border-slate-800">
-                <td className="px-4 py-3">{c.name}</td>
-                <td className="px-4 py-3" dir="ltr">{c.trn ?? '—'}</td>
-                <td className="px-4 py-3">{c.currency}</td>
-                <td className="px-4 py-3">{c.isActive ? t('common.active') : t('common.inactive')}</td>
-              </tr>
-            ))}
-            {!list.isLoading && !list.data?.items.length && (
+      {!list.isLoading && list.data?.total === 0 ? (
+        <div className={`${cardCls} flex flex-col items-center gap-4 py-16 text-center`}>
+          <div className="flex h-14 w-14 items-center justify-center rounded-full bg-blue-50 dark:bg-blue-950">
+            <svg className="h-7 w-7 text-blue-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-base font-semibold text-slate-700 dark:text-slate-200">Set up your first company</p>
+            <p className="mt-1 text-sm text-slate-400">Add a company to start creating invoices and tracking finances.</p>
+          </div>
+          <button type="button" className={btnCls} onClick={() => setOpen(true)}>
+            Create your first company
+          </button>
+        </div>
+      ) : (
+        <div className={`${cardCls} overflow-x-auto`}>
+          <table className="w-full text-start text-sm">
+            <thead className="bg-slate-50 text-slate-500 dark:bg-slate-800">
               <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-slate-400">{t('common.empty')}</td>
+                <th className="px-4 py-3 text-start font-medium">{t('common.name')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('common.trn')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('common.currency')}</th>
+                <th className="px-4 py-3 text-start font-medium">{t('common.status')}</th>
               </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {list.data?.items.map((c) => (
+                <tr key={c.id} className="border-t border-border dark:border-slate-800">
+                  <td className="px-4 py-3">{c.name}</td>
+                  <td className="px-4 py-3" dir="ltr">{c.trn ?? '—'}</td>
+                  <td className="px-4 py-3">{c.currency}</td>
+                  <td className="px-4 py-3">{c.isActive ? t('common.active') : t('common.inactive')}</td>
+                </tr>
+              ))}
+              {list.isLoading && (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-slate-400">Loading…</td></tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <Modal open={open} onOpenChange={setOpen} title={t('companies.add')}>
         <form onSubmit={handleSubmit((v) => create.mutate(v))} className="space-y-3" noValidate>
