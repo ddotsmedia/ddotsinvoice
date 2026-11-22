@@ -52,7 +52,7 @@ function CompanySelector({ user }: { user: AuthUser | undefined }) {
         {hasCompanies && (
           <select
             aria-label="Company"
-            className="h-9 max-w-52 rounded-lg border border-border bg-surface px-2 text-sm text-primary"
+            className="h-8 max-w-52 rounded-full border-0 bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm cursor-pointer hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
             value={active ?? ''}
             onChange={(e) => {
               setStoredCompanyId(e.target.value || null);
@@ -67,9 +67,9 @@ function CompanySelector({ user }: { user: AuthUser | undefined }) {
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-border bg-surface px-3 text-sm font-medium text-primary hover:bg-surface-3"
+            className="inline-flex h-8 items-center gap-1.5 rounded-full bg-blue-600 px-3 text-xs font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors"
           >
-            <Plus className="h-4 w-4" />
+            <Plus className="h-3.5 w-3.5" />
             Create Company
           </button>
         )}
@@ -113,6 +113,7 @@ export function TopNav({ onMenu }: { onMenu: () => void }) {
         <button type="button" aria-label="Search" className={iconBtn}><Search className="h-4 w-4" /></button>
         <button type="button" aria-label="Notifications" className={`${iconBtn} relative`}>
           <Bell className="h-4 w-4" />
+          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
         </button>
         <button type="button" aria-label={t('nav.theme')} className={iconBtn} onClick={toggleTheme}>
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

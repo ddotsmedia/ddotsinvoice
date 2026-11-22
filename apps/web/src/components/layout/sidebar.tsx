@@ -5,20 +5,27 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import * as Collapsible from '@radix-ui/react-collapsible';
 import {
-  Banknote, BarChart2, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange, ChevronDown, CreditCard, FileMinus,
-  FileText, LayoutDashboard, Landmark, ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale,
-  Table as TableIcon, Target, Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText,
+  Banknote, BarChart2, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange,
+  ChevronDown, ChevronRight, CreditCard, FileMinus, FileText, LayoutDashboard, Landmark,
+  ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale, Table as TableIcon, Target,
+  Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText,
 } from 'lucide-react';
 import { useLabel } from '@/lib/ui-helpers';
 import { useAuth } from '@/lib/auth';
 
 type Icon = ComponentType<{ className?: string }>;
+
 interface Item { href: string; en: string; ar: string; icon: Icon }
-interface Group { key: string; en: string; ar: string; icon: Icon; items: Item[] }
+interface Group {
+  key: string; en: string; ar: string; icon: Icon;
+  iconBg: string; iconColor: string;
+  items: Item[];
+}
 
 const GROUPS: Group[] = [
   {
     key: 'invoicing', en: 'Invoicing', ar: 'الفواتير', icon: FileText,
+    iconBg: 'bg-green-500/10', iconColor: 'text-green-400',
     items: [
       { href: '/dashboard/invoicing/customers', en: 'Customers', ar: 'العملاء', icon: Users },
       { href: '/dashboard/invoicing/invoices?type=invoice', en: 'Invoices', ar: 'الفواتير', icon: FileText },
@@ -27,6 +34,7 @@ const GROUPS: Group[] = [
   },
   {
     key: 'purchasing', en: 'Purchasing', ar: 'المشتريات', icon: ShoppingCart,
+    iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400',
     items: [
       { href: '/dashboard/purchasing/suppliers', en: 'Suppliers', ar: 'الموردون', icon: Truck },
       { href: '/dashboard/purchasing/purchase-orders', en: 'Purchase Orders', ar: 'أوامر الشراء', icon: ShoppingCart },
@@ -36,7 +44,8 @@ const GROUPS: Group[] = [
     ],
   },
   {
-    key: 'payments', en: 'Payments', ar: 'المدفوعات', icon: Wallet,
+    key: 'payments', en: 'Payments', ar: 'المدفوعات', icon: CreditCard,
+    iconBg: 'bg-emerald-500/10', iconColor: 'text-emerald-400',
     items: [
       { href: '/dashboard/payments/customer-payments', en: 'Receipts', ar: 'إيصالات العملاء', icon: Wallet },
       { href: '/dashboard/payments/supplier-payments', en: 'Supplier Payments', ar: 'مدفوعات الموردين', icon: CreditCard },
@@ -47,6 +56,7 @@ const GROUPS: Group[] = [
   },
   {
     key: 'hr', en: 'HR & Payroll', ar: 'الموارد البشرية', icon: UserRound,
+    iconBg: 'bg-violet-500/10', iconColor: 'text-violet-400',
     items: [
       { href: '/dashboard/hr/employees', en: 'Employees', ar: 'الموظفون', icon: UserRound },
       { href: '/dashboard/hr/departments', en: 'Departments', ar: 'الأقسام', icon: Building2 },
@@ -57,6 +67,7 @@ const GROUPS: Group[] = [
   },
   {
     key: 'accounting', en: 'Accounting', ar: 'المحاسبة', icon: BookOpen,
+    iconBg: 'bg-indigo-500/10', iconColor: 'text-indigo-400',
     items: [
       { href: '/dashboard/accounting/chart-of-accounts', en: 'Chart of Accounts', ar: 'دليل الحسابات', icon: ListTree },
       { href: '/dashboard/accounting/journals', en: 'Journal Entries', ar: 'قيود اليومية', icon: BookOpen },
@@ -66,6 +77,7 @@ const GROUPS: Group[] = [
   },
   {
     key: 'reports', en: 'Reports', ar: 'التقارير', icon: BarChart3,
+    iconBg: 'bg-rose-500/10', iconColor: 'text-rose-400',
     items: [
       { href: '/dashboard/reports/balance-sheet', en: 'Balance Sheet', ar: 'الميزانية العمومية', icon: BarChart3 },
       { href: '/dashboard/reports/income-statement', en: 'Income Statement', ar: 'قائمة الدخل', icon: BarChart3 },
@@ -78,13 +90,14 @@ const GROUPS: Group[] = [
   },
   {
     key: 'budgets', en: 'Budgets', ar: 'الموازنات', icon: Target,
+    iconBg: 'bg-cyan-500/10', iconColor: 'text-cyan-400',
     items: [{ href: '/dashboard/budgets', en: 'Budgets', ar: 'الموازنات', icon: Target }],
   },
 ];
 
-// Shown only to company_admin / tenant_admin (see visibleGroups)
 const ADMIN_GROUP: Group = {
   key: 'admin', en: 'Admin', ar: 'الإدارة', icon: Shield,
+  iconBg: 'bg-slate-500/10', iconColor: 'text-slate-400',
   items: [
     { href: '/dashboard/admin/company', en: 'Company Settings', ar: 'إعدادات الشركة', icon: Building2 },
     { href: '/dashboard/admin/users', en: 'User Management', ar: 'إدارة المستخدمين', icon: Users },
@@ -106,6 +119,7 @@ export function Sidebar() {
 
   return (
     <div className="flex h-full flex-col bg-sidebar-bg text-sidebar-text">
+      {/* Logo */}
       <div className="px-5 pb-4 pt-5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 shadow-lg shadow-brand-500/30">
@@ -120,64 +134,94 @@ export function Sidebar() {
         </div>
       </div>
 
-      <nav className="flex-1 space-y-1 overflow-y-auto px-3 pb-4" aria-label="Main">
+      <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4" aria-label="Main">
+        {/* Dashboard */}
         <Link
           href="/dashboard"
-          className={`flex items-center gap-3 rounded-md border-s-[3px] px-3 py-2 text-sm ${
-            pathname === '/dashboard' ? 'border-accent bg-brand-500 text-white' : 'border-transparent hover:bg-sidebar-hover'
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            pathname === '/dashboard'
+              ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/30'
+              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
           }`}
         >
-          <LayoutDashboard className="h-4 w-4" />
+          <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${pathname === '/dashboard' ? 'bg-white/20' : 'bg-blue-500/10'}`}>
+            <LayoutDashboard className={`h-4 w-4 ${pathname === '/dashboard' ? 'text-white' : 'text-blue-400'}`} />
+          </span>
           {L('Dashboard', 'الرئيسية')}
         </Link>
+
+        {/* Reports Overview */}
         <Link
           href="/dashboard/reports/overview"
-          className={`flex items-center gap-3 rounded-md border-s-[3px] px-3 py-2 text-sm ${
-            pathname.startsWith('/dashboard/reports/overview') ? 'border-accent bg-brand-500 text-white' : 'border-transparent hover:bg-sidebar-hover'
+          className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+            pathname.startsWith('/dashboard/reports/overview')
+              ? 'bg-brand-500 text-white shadow-sm shadow-brand-500/30'
+              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
           }`}
         >
-          <BarChart2 className="h-4 w-4" />
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/10">
+            <BarChart2 className="h-4 w-4 text-rose-400" />
+          </span>
           {L('Reports', 'التقارير')}
         </Link>
-        {visibleGroups.map((g) => {
-          const GroupIcon = g.icon;
-          return (
-            <Collapsible.Root key={g.key} open={open[g.key] ?? false} onOpenChange={(v) => setOpen((s) => ({ ...s, [g.key]: v }))}>
-              <Collapsible.Trigger className="mt-3 flex w-full items-center justify-between px-3 py-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-muted hover:text-sidebar-text">
-                <span className="flex items-center gap-2"><GroupIcon className="h-3.5 w-3.5" />{L(g.en, g.ar)}</span>
-                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open[g.key] ? 'rotate-180' : ''}`} />
-              </Collapsible.Trigger>
-              <Collapsible.Content className="space-y-0.5">
-                {g.items.map((it) => {
-                  const ItemIcon = it.icon;
-                  const base = it.href.split('?')[0];
-                  const active = pathname === base || pathname.startsWith(base + '/');
-                  return (
-                    <Link
-                      key={it.href}
-                      href={it.href}
-                      className={`flex items-center gap-3 rounded-md border-s-[3px] px-3 py-1.5 text-sm ${
-                        active ? 'border-accent bg-sidebar-active text-white' : 'border-transparent hover:bg-sidebar-hover hover:text-white'
-                      }`}
-                    >
-                      <ItemIcon className="h-4 w-4" />
-                      {L(it.en, it.ar)}
-                    </Link>
-                  );
-                })}
-              </Collapsible.Content>
-            </Collapsible.Root>
-          );
-        })}
+
+        {/* Groups */}
+        <div className="mt-2 space-y-0.5">
+          {visibleGroups.map((g) => {
+            const GroupIcon = g.icon;
+            const isOpen = open[g.key] ?? false;
+            return (
+              <Collapsible.Root key={g.key} open={isOpen} onOpenChange={(v) => setOpen((s) => ({ ...s, [g.key]: v }))}>
+                <Collapsible.Trigger className="flex w-full items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-sidebar-text hover:bg-sidebar-hover hover:text-white transition-colors">
+                  <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${g.iconBg}`}>
+                    <GroupIcon className={`h-4 w-4 ${g.iconColor}`} />
+                  </span>
+                  <span className="flex-1 text-start">{L(g.en, g.ar)}</span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-muted transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                </Collapsible.Trigger>
+                <Collapsible.Content className="ms-4 mt-0.5 space-y-0.5 border-s border-white/10 ps-3">
+                  {g.items.map((it) => {
+                    const ItemIcon = it.icon;
+                    const base = it.href.split('?')[0];
+                    const active = pathname === base || pathname.startsWith(`${base}/`);
+                    return (
+                      <Link
+                        key={it.href}
+                        href={it.href}
+                        className={`flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-xs transition-colors ${
+                          active
+                            ? 'bg-sidebar-active text-white font-semibold'
+                            : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white'
+                        }`}
+                      >
+                        <ItemIcon className="h-3.5 w-3.5" />
+                        {L(it.en, it.ar)}
+                        {active && <ChevronRight className="ms-auto h-3 w-3 text-white/60" />}
+                      </Link>
+                    );
+                  })}
+                </Collapsible.Content>
+              </Collapsible.Root>
+            );
+          })}
+        </div>
       </nav>
 
-      <div className="flex items-center gap-3 border-t border-white/10 mx-3 px-3 py-3 rounded-xl hover:bg-white/5 transition-colors">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow">{initials}</div>
+      {/* User footer */}
+      <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 hover:bg-white/5 transition-colors">
+        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow">
+          {initials}
+        </div>
         <div className="min-w-0 flex-1">
           <div className="truncate text-sm font-semibold text-white">{user ? `${user.firstName} ${user.lastName}` : ''}</div>
           <div className="truncate text-[10px] text-muted capitalize">{user?.role.replace(/_/g, ' ') ?? ''}</div>
         </div>
-        <button type="button" aria-label="Sign out" onClick={() => void logout()} className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-white/10 hover:text-white transition-colors">
+        <button
+          type="button"
+          aria-label="Sign out"
+          onClick={() => void logout()}
+          className="shrink-0 rounded-lg p-1.5 text-muted hover:bg-white/10 hover:text-white transition-colors"
+        >
           <LogOut className="h-4 w-4" />
         </button>
       </div>
