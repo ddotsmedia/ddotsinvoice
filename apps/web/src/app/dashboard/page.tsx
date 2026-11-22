@@ -72,16 +72,16 @@ export default function DashboardPage() {
   if (!companyId) {
     return (
       <>
-        <div className="mx-auto mt-10 max-w-md rounded-2xl bg-white p-8 text-center shadow-md">
-          <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl bg-blue-50">
-            <Building2 className="h-8 w-8 text-blue-500" />
+        <div className="mx-auto mt-10 max-w-[420px] rounded-2xl bg-gradient-to-b from-white to-[#F0F2FF] px-10 py-12 text-center shadow-[0_4px_24px_rgba(59,91,219,0.08)]">
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br from-[#5C7CFA] to-[#3B5BDB]">
+            <Building2 className="h-7 w-7 text-white" />
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">{L('Select a company to view dashboard', 'اختر شركة لعرض لوحة المعلومات')}</h1>
-          <p className="mt-2 text-sm text-gray-500">{L('Use the company selector in the top bar, or create your first company below.', 'استخدم قائمة الشركات في الشريط العلوي، أو أنشئ شركتك الأولى أدناه.')}</p>
+          <h1 className="text-[20px] font-bold text-[#0F1729]">{L('Select a company to view dashboard', 'اختر شركة لعرض لوحة المعلومات')}</h1>
+          <p className="mt-2 text-[14px] text-[#5A6480]">{L('Use the company selector in the top bar, or create your first company below.', 'استخدم قائمة الشركات في الشريط العلوي، أو أنشئ شركتك الأولى أدناه.')}</p>
           <button
             type="button"
             onClick={() => setCreateOpen(true)}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
+            className="mt-6 inline-flex items-center gap-2 rounded-full bg-[#3B5BDB] px-6 py-3 text-sm font-semibold text-white transition hover:bg-[#2F4AB8]"
           >
             <Plus className="h-4 w-4" />
             {L('Create your first company', 'إنشاء شركتك الأولى')}
