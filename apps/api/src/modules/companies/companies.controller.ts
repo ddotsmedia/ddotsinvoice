@@ -17,6 +17,21 @@ import { CreateCompanyDto, UpdateCompanyDto } from './companies.dto';
 export class CompaniesController {
   constructor(private readonly companies: CompaniesService) {}
 
+  /** TEMPORARY: remove after 403 investigation */
+  @Get('debug-auth')
+  debugAuth(@CurrentUser() actor: AccessTokenPayload) {
+    const { rolesAtOrAbove } = require('@ddotsinvoice/shared');
+    const allowed = rolesAtOrAbove(require('@ddotsinvoice/shared').UserRole.COMPANY_ADMIN);
+    return {
+      actorRole: actor?.role,
+      actorTenantId: actor?.tenantId,
+      actorCompanyId: actor?.companyId,
+      actorSub: actor?.sub,
+      allowedRoles: allowed,
+      hasAccess: allowed.includes(actor?.role),
+    };
+  }
+
   @Get()
   list(@CurrentUser() actor: AccessTokenPayload, @Query() q: PageQueryDto) {
     return this.companies.list(actor, q);
