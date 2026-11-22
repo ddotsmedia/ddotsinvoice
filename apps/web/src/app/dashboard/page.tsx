@@ -1,45 +1,57 @@
 'use client';
 
-import Link from 'next/link';
 import { useState } from 'react';
-import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  AlertCircle, Building2, Clock, Percent, Plus, TrendingDown, Wallet,
-} from 'lucide-react';
-import { money } from '@ddotsinvoice/money';
-import { api } from '@/lib/api';
+import { useQueryClient } from '@tanstack/react-query';
+import { BarChart3, BookOpen, Building2, CreditCard, FileText, Plus, Receipt } from 'lucide-react';
 import { useAuth } from '@/lib/auth';
 import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
-import { useLabel, errMsg } from '@/lib/ui-helpers';
+import { useLabel } from '@/lib/ui-helpers';
 import { CreateCompanyModal } from '@/components/create-company-modal';
 import { KpiCard } from './components/KpiCard';
-import { NetProfitHero } from './components/NetProfitHero';
-import { CashRunway } from './components/CashRunway';
-import { ProfitTrendChart } from './components/ProfitTrendChart';
-import { AiInsights } from './components/AiInsights';
-import { QuickActions } from './components/QuickActions';
+import { HeroCard } from './components/HeroCard';
+import { CashRunwayCard } from './components/CashRunwayCard';
+import { TrendChart, type Period, type TrendPoint } from './components/TrendChart';
+import { AiInsights, type Insight } from './components/AiInsights';
+import { QuickActions, type QuickAction } from './components/QuickActions';
+import './dashboard.css';
 
-interface Dash {
-  totalRevenue: string; totalExpenses: string; netProfit: string;
-  outstandingReceivables: string; outstandingPayables: string; cashBalance: string;
-  topCustomers: { customerId: string; nameEn: string; nameAr: string; totalAmount: string }[];
-}
-interface Invoice { id: string; number: string; date: string; dueDate: string | null; total: string; status: string; customerId: string }
+// ── Mock data (hardcoded until the dashboard API is wired up) ─────────────
+const KPIS = [
+  { label: 'Receivables', amount: 'AED 602,238', change: 15.8, sub: 'vs 30d · Outstanding invoices' },
+  { label: 'Payables', amount: 'AED 117,525', change: 2.5, sub: 'vs 30d · Outstanding bills' },
+  { label: 'Cash Position', amount: 'AED 1,126,250', change: 0, sub: 'vs 30d · Bank + Cash' },
+  { label: 'Net VAT', amount: '−AED 5,596', change: 85.4, sub: 'vs 30d · Output − Input VAT' },
+];
 
-const aed = new Intl.NumberFormat('en-AE', { style: 'currency', currency: 'AED', maximumFractionDigits: 0 });
-const fmt = (v: string | number | null | undefined) => (v === null || v === undefined || v === '' ? 'AED 0' : aed.format(Number(money(String(v)).toFixed(2))));
-const ymd = (d: Date) => d.toISOString().slice(0, 10);
-
-const monthBounds = (offset: number) => {
-  const now = new Date();
-  const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() - offset, 1));
-  const end = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth() + 1, 0));
-  return { from: ymd(start), to: ymd(end), label: start.toLocaleString('en-GB', { month: 'short', year: 'numeric', timeZone: 'UTC' }) };
+const TREND: Record<Period, TrendPoint[]> = {
+  '1D': ['9AM', '10', '11', '12PM', '1', '2', '3', '4', '5'].map((label, i) => ({ label, value: [1200, 1800, 1400, 2100, 1900, 2400, 2200, 2600, 2800][i] })),
+  '1W': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, i) => ({ label, value: [5200, 7800, 6400, 9100, 8200, 7600, 10200][i] })),
+  '1M': ['03/11', '05', '07', '09', '11', '13', '15', '17', '19', '21', '23', '25', '27', '29', '01/12', '03'].map((label, i) => ({
+    label,
+    value: [1200, 15800, 9400, 11100, 10200, 12800, 8600, 13400, 9100, 11200, 7800, 12600, -1200, 10400, 11800, 9200][i],
+  })),
+  '1Y': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((label, i) => ({
+    label,
+    value: [32000, 28000, 45000, 39000, 52000, 48000, 61000, 57000, 43000, 69000, 74000, 79273][i],
+  })),
+  All: ['2022', '2023', 'Q1 24', 'Q2 24', 'Q3 24', 'Q4 24'].map((label, i) => ({ label, value: [120000, 185000, 45000, 52000, 61000, 79273][i] })),
 };
 
-function Skeleton({ className = '' }: { className?: string }) {
-  return <div className={`animate-pulse rounded-2xl bg-gray-200 ${className}`} />;
-}
+const INSIGHTS: Insight[] = [
+  { category: 'collections', title: 'Escalate collection for DAMAC Properties', description: 'AED 82,399 is over 90 days overdue. Send formal demand letter or consider legal action.' },
+  { category: 'collections', title: 'Call DAMAC Properties', description: 'AED 92,206 overdue for 172 days. Escalate to management — consider external collection.' },
+  { category: 'vat', title: 'VAT return filing due in 12 days', description: 'Q3 2024-25 VAT return must be filed by Dec 28. Net payable estimated at AED 5,596.' },
+  { category: 'cashflow', title: 'Strong cash position — consider short-term investment', description: 'AED 624K idle cash on hand could earn 4–5% in a UAE T-bill or term deposit.' },
+  { category: 'receivables', title: '3 invoices approaching 60-day mark', description: 'Send payment reminders to Al Futtaim, Emaar, and Majid Al Futtaim before they go overdue.' },
+];
+
+const ACTIONS: QuickAction[] = [
+  { href: '/dashboard/invoicing/invoices/new', label: 'Create Invoice', description: 'Generate a new sales invoice', icon: FileText, bg: '#EEF2FF', color: '#4F46E5' },
+  { href: '/dashboard/purchasing/supplier-invoices/new', label: 'Record Bill', description: 'Enter a vendor bill', icon: Receipt, bg: '#ECFDF5', color: '#059669' },
+  { href: '/dashboard/payments/customer-payments/new', label: 'Record Payment', description: 'Log customer receipt', icon: CreditCard, bg: '#EFF6FF', color: '#2563EB' },
+  { href: '/dashboard/accounting/journals/new', label: 'New Journal Entry', description: 'Post a manual journal', icon: BookOpen, bg: '#FFF7ED', color: '#EA580C' },
+  { href: '/dashboard/reports', label: 'View Reports', description: 'P&L, Balance Sheet, VAT', icon: BarChart3, bg: '#FAF5FF', color: '#7C3AED' },
+];
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -48,47 +60,14 @@ function getGreeting() {
   return 'Good Evening';
 }
 
-const OPEN_STATUSES = ['sent', 'posted', 'partially_paid', 'overdue'];
-
 export default function DashboardPage() {
   const L = useLabel();
   const { user } = useAuth({ fetchUser: true });
   const companyId = useActiveCompanyId(user);
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
-  const on = !!companyId;
-  const today = ymd(new Date());
-  const month = monthBounds(0);
-  const prevMonth = monthBounds(1);
-  const fiscalYear = `FY ${new Date().getUTCFullYear()}`;
 
-  const kpi = useQuery({
-    queryKey: ['dash', companyId, 'kpi', month.from],
-    enabled: on,
-    queryFn: async () => (await api.get<Dash>('/reports/dashboard', { params: { fromDate: month.from, toDate: month.to } })).data,
-  });
-  const prevKpi = useQuery({
-    queryKey: ['dash', companyId, 'kpi', prevMonth.from],
-    enabled: on,
-    queryFn: async () => (await api.get<Dash>('/reports/dashboard', { params: { fromDate: prevMonth.from, toDate: prevMonth.to } })).data,
-  });
-  const series = useQueries({
-    queries: [5, 4, 3, 2, 1, 0].map((o) => {
-      const b = monthBounds(o);
-      return {
-        queryKey: ['dash', companyId, 'kpi', b.from],
-        enabled: on,
-        queryFn: async () => (await api.get<Dash>('/reports/dashboard', { params: { fromDate: b.from, toDate: b.to } })).data,
-      };
-    }),
-  });
-  const invoices = useQuery({
-    queryKey: ['dash', companyId, 'invoices'],
-    enabled: on,
-    queryFn: async () => (await api.get<{ items: Invoice[] }>('/invoicing/invoices', { params: { limit: 20 } })).data.items,
-  });
-
-  if (!user) return <div className="p-8"><Skeleton className="h-32" /></div>;
+  if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
 
   if (!companyId) {
     return (
@@ -117,222 +96,48 @@ export default function DashboardPage() {
     );
   }
 
-  const failed = [kpi, invoices].find((q) => q.error);
-  if (failed?.error) {
-    return (
-      <div className="flex items-start gap-3 rounded-2xl bg-white p-6 text-sm shadow-md">
-        <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
-        <div>
-          <div className="font-semibold text-gray-900">{L('Dashboard data could not be loaded', 'تعذر تحميل بيانات اللوحة')}</div>
-          <div className="text-gray-500">{errMsg(failed.error)}</div>
-        </div>
-      </div>
-    );
-  }
-
-  const d = kpi.data;
-  const p = prevKpi.data;
-
-  // Compute % change vs previous month
-  const pctChange = (curr: string | undefined, prev: string | undefined): number | undefined => {
-    const c = Number(curr ?? 0);
-    const pv = Number(prev ?? 0);
-    if (pv === 0) return undefined;
-    return ((c - pv) / Math.abs(pv)) * 100;
-  };
-
-  // Chart data for 6 months
-  const chartData = series.map((s, i) => {
-    const b = monthBounds([5, 4, 3, 2, 1, 0][i]);
-    const revenue = Number(s.data?.totalRevenue ?? 0);
-    const expenses = Number(s.data?.totalExpenses ?? 0);
-    return { month: b.label, revenue, expenses, net: revenue - expenses };
-  });
-  const seriesLoading = series.some((s) => s.isLoading);
-
-  // Runway calculation: cashBalance / (monthlyExpenses / 4.33) => weeks
-  const cashNum = Number(d?.cashBalance ?? 0);
-  const expNum = Number(d?.totalExpenses ?? 0);
-  const runwayWeeks = expNum > 0 ? (cashNum / (expNum / 4.33)) : 999;
-
-  // Count overdue invoices
-  const overdueCount = (invoices.data ?? []).filter((inv) => {
-    if (!inv.dueDate || !OPEN_STATUSES.includes(inv.status)) return false;
-    return Date.parse(today) > Date.parse(inv.dueDate);
-  }).length;
-
-  const receivablesNum = Number(d?.outstandingReceivables ?? 0);
-  const netProfitNum = Number(d?.netProfit ?? 0);
-
-  // Fake VAT estimate (5% of revenue - 5% of expenses) if no dedicated endpoint
-  const vatEstimate = Number(d?.totalRevenue ?? 0) * 0.05 - Number(d?.totalExpenses ?? 0) * 0.05;
-
   return (
-    <div className="-m-4 min-h-screen bg-[#F8FAFC] p-4 md:-m-6 md:p-6">
-      <div className="mx-auto max-w-7xl space-y-5">
-
-        {/* ── GREETING + FISCAL YEAR ───────────────────────────────── */}
-        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-extrabold text-gray-900">
-              {getGreeting()}{user ? `, ${user.firstName}` : ''} 👋
-            </h1>
-            <p className="mt-0.5 text-sm text-gray-500">
-              {month.label} · {fiscalYear} · Overview
-            </p>
-          </div>
-          <Link
-            href="/dashboard/invoicing/invoices/new"
-            className="inline-flex h-9 items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4 text-sm font-semibold text-white shadow-sm transition hover:opacity-90"
-          >
-            <Plus className="h-4 w-4" />
-            New Invoice
-          </Link>
+    <div className="dash-root -m-4 min-h-screen bg-[var(--dash-bg)] p-4 md:-m-6 md:p-6">
+      <div className="mx-auto flex max-w-7xl flex-col gap-5">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[var(--dash-fg)]">
+            {getGreeting()}, {user.firstName} 👋
+          </h1>
+          <p className="mt-0.5 text-sm text-[var(--dash-fg2)]">
+            FY 2024–25 · <span className="text-[var(--dash-fg3)]">Sample figures — live data not connected yet</span>
+          </p>
         </div>
 
-        {/* ── 4 KPI CARDS ─────────────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-          {!d ? (
-            Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-28" />)
-          ) : (
-            <>
-              <KpiCard
-                label="Receivables"
-                value={fmt(d.outstandingReceivables)}
-                change={pctChange(d.outstandingReceivables, p?.outstandingReceivables)}
-                icon={Clock}
-                iconBg="bg-blue-50"
-                iconColor="text-blue-600"
-              />
-              <KpiCard
-                label="Payables"
-                value={fmt(d.outstandingPayables)}
-                change={pctChange(d.outstandingPayables, p?.outstandingPayables)}
-                icon={TrendingDown}
-                iconBg="bg-red-50"
-                iconColor="text-red-500"
-              />
-              <KpiCard
-                label="Cash Position"
-                value={fmt(d.cashBalance)}
-                change={pctChange(d.cashBalance, p?.cashBalance)}
-                icon={Wallet}
-                iconBg="bg-emerald-50"
-                iconColor="text-emerald-600"
-              />
-              <KpiCard
-                label="Net VAT (est.)"
-                value={fmt(vatEstimate)}
-                change={undefined}
-                icon={Percent}
-                iconBg="bg-amber-50"
-                iconColor="text-amber-600"
-              />
-            </>
-          )}
+        <div className="dash-kpi-row">
+          {KPIS.map((k) => (
+            <KpiCard key={k.label} label={k.label} amount={k.amount} change={k.change} sub={k.sub} />
+          ))}
         </div>
 
-        {/* ── HERO + CASH RUNWAY ──────────────────────────────────── */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-5">
-          <div className="lg:col-span-2">
-            {!d ? (
-              <Skeleton className="h-48" />
-            ) : (
-              <NetProfitHero
-                value={fmt(d.netProfit)}
-                change={pctChange(d.netProfit, p?.netProfit)}
-                period={`Net Profit · ${month.label}`}
-              />
-            )}
-          </div>
-          <div className="lg:col-span-3">
-            {!d ? (
-              <Skeleton className="h-48" />
-            ) : (
-              <CashRunway
-                runwayWeeks={runwayWeeks}
-                corporateBalance={fmt(d.cashBalance)}
-                cashOnHand={fmt(Number(d.cashBalance) * 0.3)}
-              />
-            )}
+        <div className="dash-main-grid">
+          <HeroCard
+            eyebrow="Net Profit · Last 30 Days"
+            status="Healthy"
+            amount="AED 79,273"
+            change={3815.9}
+            changeLabel="+3,815.9% vs previous month"
+          />
+          <CashRunwayCard
+            weeks={288}
+            description="Excellent runway · over 1 year of cash reserves"
+            accounts={[
+              { label: 'Corporate Account', value: 'AED 500,000' },
+              { label: 'Cash on Hand', value: 'AED 624,250' },
+            ]}
+          />
+          <div className="dash-trend">
+            <TrendChart series={TREND} initial="1M" />
           </div>
         </div>
 
-        {/* ── TREND CHART + AI INSIGHTS + QUICK ACTIONS ───────────── */}
-        <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
-          <div className="xl:col-span-2">
-            <ProfitTrendChart data={chartData} isLoading={seriesLoading} />
-          </div>
-          <div className="xl:col-span-1 space-y-4">
-            <AiInsights
-              receivables={receivablesNum}
-              overdueCount={overdueCount}
-              netProfit={netProfitNum}
-            />
-          </div>
-        </div>
-
-        {/* ── QUICK ACTIONS + RECENT INVOICES ─────────────────────── */}
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
-          <div className="lg:col-span-1">
-            <QuickActions />
-          </div>
-          <div className="lg:col-span-2 rounded-2xl bg-white shadow-sm ring-1 ring-gray-100 overflow-hidden">
-            <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
-              <h3 className="text-sm font-semibold text-gray-900">Recent Invoices</h3>
-              <Link href="/dashboard/invoicing/invoices?type=invoice" className="text-xs font-medium text-blue-600 hover:underline">
-                View all →
-              </Link>
-            </div>
-            {!invoices.data ? (
-              <div className="p-6"><Skeleton className="h-40" /></div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-50 text-xs font-medium uppercase tracking-wide text-gray-500">
-                    <tr>
-                      <th className="px-4 py-3 text-start">Invoice #</th>
-                      <th className="px-4 py-3 text-end">Amount</th>
-                      <th className="px-4 py-3 text-start">Status</th>
-                      <th className="px-4 py-3 text-start">Date</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {invoices.data.slice(0, 8).map((inv) => {
-                      const statusColors: Record<string, string> = {
-                        paid: 'bg-emerald-50 text-emerald-700',
-                        posted: 'bg-blue-50 text-blue-700',
-                        partially_paid: 'bg-amber-50 text-amber-700',
-                        draft: 'bg-gray-100 text-gray-600',
-                        overdue: 'bg-red-50 text-red-700',
-                      };
-                      return (
-                        <tr key={inv.id} className="border-b border-gray-50 hover:bg-gray-50 transition-colors">
-                          <td className="px-4 py-3 font-mono text-sm font-semibold text-blue-600">{inv.number}</td>
-                          <td className="px-4 py-3 text-end font-semibold text-gray-900 tabular-nums" dir="ltr">
-                            {aed.format(Number(money(inv.total).toFixed(2)))}
-                          </td>
-                          <td className="px-4 py-3">
-                            <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${statusColors[inv.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                              {inv.status.replace(/_/g, ' ')}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-xs text-gray-400">{inv.date}</td>
-                        </tr>
-                      );
-                    })}
-                    {!invoices.data.length && (
-                      <tr>
-                        <td colSpan={4} className="px-4 py-10 text-center text-sm text-gray-400">
-                          No invoices yet
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </div>
+        <div className="dash-bottom-row">
+          <AiInsights items={INSIGHTS} />
+          <QuickActions actions={ACTIONS} />
         </div>
       </div>
     </div>

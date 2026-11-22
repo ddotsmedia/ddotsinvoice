@@ -1,42 +1,38 @@
-'use client';
+import type { ReactNode } from 'react';
 
-import type { ComponentType } from 'react';
-import { TrendingUp, TrendingDown } from 'lucide-react';
+export type Direction = 'up' | 'down' | 'flat';
+
+export function directionOf(change: number | undefined): Direction {
+  if (change === undefined || Math.abs(change) < 0.05) return 'flat';
+  return change > 0 ? 'up' : 'down';
+}
+
+export function ChangeBadge({ change }: { change: number | undefined }) {
+  const dir = directionOf(change);
+  const arrow = dir === 'up' ? '▲' : dir === 'down' ? '▼' : '—';
+  const text = change === undefined ? 'n/a' : `${Math.abs(change).toFixed(1)}%`;
+  return <span className={`dash-badge ${dir}`}>{arrow} {text}</span>;
+}
 
 interface KpiCardProps {
   label: string;
-  value: string;
-  change?: number; // percent change, positive = up, negative = down
-  icon: ComponentType<{ className?: string }>;
-  iconBg: string;
-  iconColor: string;
+  amount: string;
+  change?: number;
+  sub: string;
+  info?: ReactNode;
 }
 
-export function KpiCard({ label, value, change, icon: Icon, iconBg, iconColor }: KpiCardProps) {
-  const isPositive = change !== undefined && change >= 0;
-  const hasChange = change !== undefined;
-
+export function KpiCard({ label, amount, change, sub, info }: KpiCardProps) {
   return (
-    <div className="rounded-2xl bg-white px-5 py-4 shadow-sm ring-1 ring-gray-100 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between">
-        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${iconBg}`}>
-          <Icon className={`h-5 w-5 ${iconColor}`} />
-        </div>
-        {hasChange && (
-          <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold ${
-            isPositive ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'
-          }`}>
-            {isPositive ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-            {Math.abs(change).toFixed(1)}%
-          </span>
-        )}
+    <div className="dash-card flex flex-col gap-1.5">
+      <div className="flex items-center justify-between">
+        <span className="text-xs font-semibold text-[var(--dash-fg2)]">{label}</span>
+        {info}
       </div>
-      <div className="mt-3">
-        <div className="text-2xl font-bold text-gray-900 tabular-nums" dir="ltr">{value}</div>
-        <div className="mt-1 text-xs font-medium text-gray-500 uppercase tracking-wide">{label}</div>
-        {hasChange && (
-          <div className="mt-1 text-xs text-gray-400">vs last 30 days</div>
-        )}
+      <div className="dash-kpi-amount">{amount}</div>
+      <div className="flex items-center gap-2">
+        <ChangeBadge change={change} />
+        <span className="dash-sub">{sub}</span>
       </div>
     </div>
   );
