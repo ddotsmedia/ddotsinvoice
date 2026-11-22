@@ -44,10 +44,10 @@ const write = (key: string, value: string): void => {
 
 function UiBridge({ children }: { children: ReactNode }) {
   const { resolvedTheme, setTheme } = useTheme();
-  const [locale, setLocaleState] = useState<Locale>('ar');
+  const [locale, setLocaleState] = useState<Locale>('en');
 
   useEffect(() => {
-    setLocaleState(read('locale') === 'en' ? 'en' : 'ar');
+    setLocaleState(read('locale') === 'ar' ? 'ar' : 'en');
   }, []);
 
   // RTL/LTR and lang attribute follow the selected language

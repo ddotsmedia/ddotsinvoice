@@ -2,22 +2,15 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
-import { companySchema, Currency } from '@ddotsinvoice/shared';
-import type { z } from 'zod';
 import { api } from '@/lib/api';
-import { Field, Modal, btnCls, inputCls } from '@/components/ui';
+import { btnCls } from '@/components/ui';
 import { Building2, CheckCircle2, FileText, Plus, Receipt } from 'lucide-react';
+import { CreateCompanyModal } from '@/components/create-company-modal';
 
-type CompanyForm = z.infer<typeof companySchema>;
 interface Company { id: string; name: string; trn: string | null; currency: string; isActive: boolean }
 interface Paged<T> { items: T[]; total: number }
-
-const stripEmpty = (v: Record<string, unknown>) =>
-  Object.fromEntries(Object.entries(v).filter(([, x]) => x !== '' && x !== undefined));
 
 function CompanyInitials({ name }: { name: string }) {
   const words = name.trim().split(/\s+/);
@@ -72,30 +65,12 @@ function CompanyCard({ company, t }: { company: Company; t: ReturnType<typeof us
 
 export default function CompaniesPage() {
   const t = useTranslations();
-  const qc = useQueryClient();
   const router = useRouter();
   const [open, setOpen] = useState(false);
 
   const list = useQuery({
     queryKey: ['companies'],
     queryFn: async () => (await api.get<Paged<Company>>('/companies', { params: { limit: 100 } })).data,
-  });
-
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors, isSubmitting },
-  } = useForm<CompanyForm>({ resolver: zodResolver(companySchema), defaultValues: { currency: Currency.AED } });
-
-  const create = useMutation({
-    mutationFn: async (v: CompanyForm) => (await api.post<{ id: string }>('/companies', stripEmpty(v))).data,
-    onSuccess: (company) => {
-      void qc.invalidateQueries({ queryKey: ['companies'] });
-      reset();
-      setOpen(false);
-      router.push(`/dashboard/invoicing?company=${company.id}&new=1`);
-    },
   });
 
   const isLoading = list.isLoading;
@@ -164,43 +139,11 @@ export default function CompaniesPage() {
         </div>
       )}
 
-      <Modal open={open} onOpenChange={setOpen} title={t('companies.add')}>
-        <form onSubmit={handleSubmit((v) => create.mutate(v))} className="space-y-3" noValidate>
-          <Field label={t('common.name')} error={errors.name?.message}>
-            <input className={inputCls} {...register('name')} />
-          </Field>
-          <Field label={t('common.nameAr')} error={errors.nameAr?.message}>
-            <input className={inputCls} {...register('nameAr')} />
-          </Field>
-          <Field label={t('common.trn')} error={errors.trn?.message}>
-            <input dir="ltr" inputMode="numeric" maxLength={15} className={inputCls} {...register('trn')} />
-          </Field>
-          <Field label={t('common.email')} error={errors.email?.message}>
-            <input dir="ltr" type="email" className={inputCls} {...register('email')} />
-          </Field>
-          <Field label={t('common.phone')} error={errors.phone?.message}>
-            <input dir="ltr" className={inputCls} {...register('phone')} />
-          </Field>
-          <Field label={t('common.currency')} error={errors.currency?.message}>
-            <select className={inputCls} {...register('currency')}>
-              {Object.values(Currency).map((c) => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
-          </Field>
-          {create.isError && <p className="text-sm text-red-600">{t('common.error')}</p>}
-          <div className="flex justify-end gap-2 pt-2">
-            <button type="button" className="rounded-lg px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 transition-colors" onClick={() => setOpen(false)}>
-              {t('common.cancel')}
-            </button>
-            <button type="submit" disabled={isSubmitting} className={`${btnCls} min-w-24 justify-center`}>
-              {isSubmitting ? (
-                <span className="h-4 w-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-              ) : t('common.save')}
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <CreateCompanyModal
+        open={open}
+        onOpenChange={setOpen}
+        onSuccess={(id) => router.push(`/dashboard/invoicing?company=${id}&new=1`)}
+      />
     </div>
   );
 }

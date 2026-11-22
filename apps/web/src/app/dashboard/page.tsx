@@ -1,17 +1,18 @@
 'use client';
 
 import Link from 'next/link';
-import type { ComponentType, ReactNode } from 'react';
-import { useQueries, useQuery } from '@tanstack/react-query';
+import { useState, type ComponentType, type ReactNode } from 'react';
+import { useQueries, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Bar, BarChart, CartesianGrid, ComposedChart, Legend, Line, LabelList, Pie, PieChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis,
 } from 'recharts';
-import { AlertCircle, Banknote, BarChart3, Clock, CreditCard, FilePlus, TrendingDown, TrendingUp, UserPlus, UserRound, Users, Wallet } from 'lucide-react';
+import { AlertCircle, Banknote, BarChart3, Building2, Clock, CreditCard, FilePlus, Plus, TrendingDown, TrendingUp, UserPlus, UserRound, Users, Wallet } from 'lucide-react';
 import { money } from '@ddotsinvoice/money';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
-import { useActiveCompanyId } from '@/lib/company';
+import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
 import { useLabel, errMsg } from '@/lib/ui-helpers';
+import { CreateCompanyModal } from '@/components/create-company-modal';
 
 interface Dash {
   totalRevenue: string; totalExpenses: string; netProfit: string;
@@ -111,6 +112,8 @@ export default function DashboardPage() {
   const L = useLabel();
   const { user } = useAuth({ fetchUser: true });
   const companyId = useActiveCompanyId(user);
+  const qc = useQueryClient();
+  const [createOpen, setCreateOpen] = useState(false);
   const on = !!companyId;
   const today = ymd(new Date());
   const month = monthBounds(0);
@@ -175,10 +178,35 @@ export default function DashboardPage() {
   if (!user) return <Skeleton className="h-40" />;
   if (!companyId) {
     return (
-      <div className="mx-auto mt-10 max-w-md rounded-xl bg-white p-8 text-center shadow-md">
-        <h1 className="text-lg font-semibold text-gray-900">{L('Select a company to view dashboard', 'اختر شركة لعرض لوحة المعلومات')}</h1>
-        <p className="mt-2 text-sm text-gray-500">{L('Use the company selector in the top bar.', 'استخدم قائمة الشركات في الشريط العلوي.')}</p>
-      </div>
+      <>
+        <div className="mx-auto mt-10 max-w-md rounded-xl bg-white p-8 text-center shadow-md">
+          <div
+            className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl"
+            style={{ background: 'linear-gradient(135deg, #EFF6FF, #DBEAFE)' }}
+          >
+            <Building2 className="h-8 w-8 text-blue-500" />
+          </div>
+          <h1 className="text-lg font-semibold text-gray-900">{L('Select a company to view dashboard', 'اختر شركة لعرض لوحة المعلومات')}</h1>
+          <p className="mt-2 text-sm text-gray-500">{L('Use the company selector in the top bar, or create your first company below.', 'استخدم قائمة الشركات في الشريط العلوي، أو أنشئ شركتك الأولى أدناه.')}</p>
+          <button
+            type="button"
+            onClick={() => setCreateOpen(true)}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
+            style={{ background: 'linear-gradient(135deg, #1E4FC2, #3B82F6)' }}
+          >
+            <Plus className="h-4 w-4" />
+            {L('Create your first company', 'إنشاء شركتك الأولى')}
+          </button>
+        </div>
+        <CreateCompanyModal
+          open={createOpen}
+          onOpenChange={setCreateOpen}
+          onSuccess={(id) => {
+            setStoredCompanyId(id);
+            void qc.invalidateQueries();
+          }}
+        />
+      </>
     );
   }
 
