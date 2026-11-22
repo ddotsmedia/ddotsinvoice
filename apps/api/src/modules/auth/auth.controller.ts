@@ -44,7 +44,7 @@ export class AuthController {
 
   @Post('refresh')
   @HttpCode(200)
-  @Throttle({ 'auth-login': { ttl: 15 * 60 * 1000, limit: 5 } })
+  @SkipThrottle({ 'auth-login': true, 'auth-register': true })
   async refresh(@Req() req: FastifyRequest, @Res({ passthrough: true }) res: FastifyReply) {
     const token = req.cookies[COOKIE];
     if (!token) throw new UnauthorizedException();

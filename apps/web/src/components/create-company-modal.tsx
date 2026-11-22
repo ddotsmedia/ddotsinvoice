@@ -39,6 +39,11 @@ export function CreateCompanyModal({ open, onOpenChange, onSuccess }: Props) {
       onOpenChange(false);
       onSuccess?.(company.id);
     },
+    onError: (err: unknown) => {
+      // Log full error details to console for debugging
+      const axiosErr = err as { response?: { status?: number; data?: unknown } };
+      console.error('[CreateCompany] error', axiosErr?.response?.status, JSON.stringify(axiosErr?.response?.data));
+    },
   });
 
   return (
