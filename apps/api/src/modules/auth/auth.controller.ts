@@ -1,5 +1,5 @@
 import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
@@ -71,6 +71,7 @@ export class AuthController {
   @Get('me')
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth()
+  @SkipThrottle({ 'auth-login': true, 'auth-register': true })
   me(@CurrentUser() actor: AccessTokenPayload) {
     return this.auth.me(actor.sub);
   }
