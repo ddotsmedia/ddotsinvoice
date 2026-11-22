@@ -28,7 +28,7 @@ export class SuspendUserDto {
 export class UpdateCompanyDto {
   @IsOptional() @IsString() @MinLength(1) @MaxLength(255) name?: string;
   @IsOptional() @IsString() @MaxLength(255) nameAr?: string;
-  @IsOptional() @Matches(/^(\d{15})?$/, { message: 'TRN must be 15 digits' }) trn?: string;
+  @IsOptional() @MaxLength(15) trn?: string;
   @IsOptional() @IsEmail() email?: string;
   @IsOptional() @IsString() @MaxLength(20) phone?: string;
   @IsOptional() @IsString() @MaxLength(500) address?: string;
