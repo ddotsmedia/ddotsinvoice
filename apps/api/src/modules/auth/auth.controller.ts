@@ -13,6 +13,8 @@ const COOKIE_OPTS = {
   sameSite: 'lax' as const,
   secure: process.env.NODE_ENV === 'production',
   path: '/',
+  // Shared across subdomains (e.g. .ddinvoice.com) so admin.ddinvoice.com can read the cookie set by the API host
+  domain: process.env.COOKIE_DOMAIN || undefined,
   maxAge: 7 * 24 * 60 * 60,
 };
 
@@ -50,7 +52,7 @@ export class AuthController {
   ) {
     const token = req.cookies[COOKIE];
     if (token) await this.auth.logout(actor.sub, hashToken(token));
-    res.clearCookie(COOKIE, { path: '/' });
+    res.clearCookie(COOKIE, { path: '/', domain: process.env.COOKIE_DOMAIN || undefined });
     return { ok: true };
   }
 
