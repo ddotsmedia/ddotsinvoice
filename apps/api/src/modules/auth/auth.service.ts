@@ -121,16 +121,22 @@ export class AuthService {
 
     let row: UserRow | undefined;
     if (tenantId) {
-      // Regular user: set tenant context so RLS policy is satisfied
+      // Regular user: set tenant context so RLS tenant_isolation policy is satisfied.
+      // Migration 0020 ensures the policy uses current_setting(..., true) so it returns
+      // NULL (not throws) when app.tenant_id is unset on a fresh connection.
       [row] = await this.db.transaction(async (tx) => {
         await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
-        return tx.select().from(users).where(and(eq(users.id, userId), eq(users.tenantId, tenantId))).limit(1);
+        // Let RLS enforce tenant isolation; only filter by user id here.
+        return tx.select().from(users).where(eq(users.id, userId)).limit(1);
       });
     } else {
-      // platform_admin: tenant_id IS NULL — platform_admin_bypass RLS policy covers this
+      // platform_admin: tenant_id IS NULL.
+      // Migration 0017/0018 platform_admin_bypass PERMISSIVE policy makes rows with
+      // tenant_id IS NULL visible. Migration 0020 prevents tenant_isolation from throwing
+      // when app.tenant_id is not set (returns NULL → false, not an error).
       [row] = await this.db.select().from(users).where(and(eq(users.id, userId), isNull(users.tenantId))).limit(1);
     }
-    if (!row) throw new UnauthorizedException();
+    if (!row) throw new UnauthorizedException('User not found');
     return publicUser(row);
   }
 
