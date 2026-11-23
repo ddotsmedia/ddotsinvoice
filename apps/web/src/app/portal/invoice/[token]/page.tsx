@@ -38,6 +38,19 @@ interface PortalInvoice {
 export default function PortalInvoicePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
   const [ackDone, setAckDone] = useState(false);
+  const [payLoading, setPayLoading] = useState(false);
+
+  const handleTelrPay = async (invoiceId: string) => {
+    setPayLoading(true);
+    try {
+      const resp = await portalApi.post<{ paymentUrl: string }>('/payments/telr/create', { invoiceId });
+      window.location.href = resp.data.paymentUrl;
+    } catch {
+      alert('Payment gateway unavailable. Please try bank transfer or contact us.');
+    } finally {
+      setPayLoading(false);
+    }
+  };
 
   const inv = useQuery({
     queryKey: ['portal', token],
@@ -146,6 +159,19 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ token:
               <span className="font-mono" dir="ltr">{money(d.total).toFixed(2)} {d.currency}</span>
             </div>
           </div>
+        </div>
+
+        {/* Pay Online with Card */}
+        <div className="px-8 py-4 border-t border-gray-100">
+          <button
+            type="button"
+            onClick={() => void handleTelrPay(d.id)}
+            disabled={payLoading}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-700 transition-colors disabled:opacity-60"
+          >
+            {payLoading ? 'Redirecting…' : '💳 Pay Online with Card'}
+          </button>
+          <p className="text-xs text-gray-400 mt-2">Secure payment via Telr · Visa, Mastercard accepted</p>
         </div>
 
         {/* Pay via Bank Transfer */}

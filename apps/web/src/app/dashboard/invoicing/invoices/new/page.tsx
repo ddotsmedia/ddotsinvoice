@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery } from '@tanstack/react-query';
 import { add, money, mul, div, sub, toDb, type Money } from '@ddotsinvoice/money';
@@ -38,6 +38,34 @@ function NewInvoiceInner() {
   const [lines, setLines] = useState<Line[]>([blank()]);
   const [isRecurring, setIsRecurring] = useState(false);
   const [recurrenceInterval, setRecurrenceInterval] = useState<'weekly' | 'monthly' | 'quarterly'>('monthly');
+  const [extracting, setExtracting] = useState(false);
+  const fileRef = useRef<HTMLInputElement>(null);
+
+  const handleFileExtract = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExtracting(true);
+    try {
+      const form = new FormData();
+      form.append('file', file);
+      const { data } = await api.post<{
+        customerName: string | null;
+        invoiceNumber: string | null;
+        date: string | null;
+        lineItems: { description: string; qty: number; unitPrice: number }[];
+        total: number | null;
+      }>('/invoicing/invoices/extract', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+      if (data.date) setDate(data.date.replace(/\//g, '-'));
+      if (data.lineItems?.length) {
+        setLines(data.lineItems.map((li) => ({ description: li.description, quantity: String(li.qty || 1), unitPrice: String(li.unitPrice || ''), discountPct: '0', vatType: 'standard' as const })));
+      }
+    } catch {
+      // silent — user can fill manually
+    } finally {
+      setExtracting(false);
+      if (fileRef.current) fileRef.current.value = '';
+    }
+  };
 
   const customers = useQuery({
     queryKey: ['customers', ''],
@@ -79,7 +107,15 @@ function NewInvoiceInner() {
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-semibold">{type === 'quote' ? L('New Quote', 'عرض سعر جديد') : L('New Invoice', 'فاتورة جديدة')}</h1>
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">{type === 'quote' ? L('New Quote', 'عرض سعر جديد') : L('New Invoice', 'فاتورة جديدة')}</h1>
+        <div>
+          <input ref={fileRef} type="file" accept="image/*,application/pdf,text/plain" className="hidden" onChange={(e) => void handleFileExtract(e)} />
+          <button type="button" disabled={extracting} className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm hover:bg-muted/50 disabled:opacity-60" onClick={() => fileRef.current?.click()}>
+            {extracting ? L('Extracting…', 'جاري الاستخراج…') : `📎 ${L('Import from File', 'استيراد من ملف')}`}
+          </button>
+        </div>
+      </div>
       <div className={`${cardCls} space-y-4 p-6`}>
         <div className="grid gap-4 sm:grid-cols-4">
           <Field label={L('Customer', 'العميل')}>

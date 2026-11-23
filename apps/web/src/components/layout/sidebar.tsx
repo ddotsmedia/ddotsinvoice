@@ -122,6 +122,7 @@ const SETTINGS_GROUP: Group = {
   items: [
     { href: '/dashboard/settings/company', en: 'Company Profile', ar: 'ملف الشركة', icon: Building2 },
     { href: '/dashboard/settings/team', en: 'Team', ar: 'الفريق', icon: Users },
+    { href: '/dashboard/settings/subscription', en: 'Subscription', ar: 'الاشتراك', icon: CreditCard },
     { href: '/dashboard/settings/audit-log', en: 'Audit Log', ar: 'سجل التدقيق', icon: ScrollText },
   ],
 };

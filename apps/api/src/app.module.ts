@@ -25,6 +25,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { InvitationsModule } from './modules/invitations/invitations.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SuggestionsModule } from './modules/suggestions/suggestions.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -55,6 +56,7 @@ import { SuggestionsModule } from './modules/suggestions/suggestions.module';
     SuperAdminModule,
     AdminModule,
     SuggestionsModule,
+    SubscriptionModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

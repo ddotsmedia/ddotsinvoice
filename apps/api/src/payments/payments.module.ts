@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { TelrModule } from './telr/telr.module';
 import { BankAccountsController } from './bank-accounts/bank-accounts.controller';
 import { BankAccountsService } from './bank-accounts/bank-accounts.service';
 import { CustomerPaymentsController } from './customer-payments/cp.controller';
@@ -11,6 +12,7 @@ import { ReconciliationsController } from './reconciliations/rec.controller';
 import { ReconciliationsService } from './reconciliations/rec.service';
 
 @Module({
+  imports: [TelrModule],
   controllers: [
     BankAccountsController,
     CustomerPaymentsController,
