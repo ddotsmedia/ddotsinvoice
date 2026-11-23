@@ -10,12 +10,36 @@ import { useLabel } from '@/lib/ui-helpers';
 interface Row { accountCode: string; nameEn: string; nameAr: string; amount: string }
 interface Is { revenue: Row[]; cogs: Row[]; operatingExpenses: Row[]; totalRevenue: string; totalCogs: string; grossProfit: string; totalOperatingExpenses: string; netProfit: string }
 
+function downloadCsv(filename: string, data: string[][]) {
+  const csv = data.map(row => row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename; a.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function IncomeStatementPage() {
   const L = useLabel();
   const y = new Date().getUTCFullYear();
   const [from, setFrom] = useState(`${y}-01-01`);
   const [to, setTo] = useState(new Date().toISOString().slice(0, 10));
   const r = useQuery({ queryKey: ['is', from, to], queryFn: async () => (await api.get<Is>('/reports/income-statement', { params: { fromDate: from, toDate: to } })).data });
+  const handleExport = () => {
+    if (!r.data) return;
+    const rows: string[][] = [
+      ['Section', 'Account Code', 'Name', 'Amount'],
+      ...r.data.revenue.map((x) => ['Revenue', x.accountCode, L(x.nameEn, x.nameAr), x.amount]),
+      ['Total Revenue', '', '', r.data.totalRevenue],
+      ...r.data.cogs.map((x) => ['COGS', x.accountCode, L(x.nameEn, x.nameAr), x.amount]),
+      ['Total COGS', '', '', r.data.totalCogs],
+      ['Gross Profit', '', '', r.data.grossProfit],
+      ...r.data.operatingExpenses.map((x) => ['Operating Expenses', x.accountCode, L(x.nameEn, x.nameAr), x.amount]),
+      ['Total Operating Expenses', '', '', r.data.totalOperatingExpenses],
+      ['Net Profit', '', '', r.data.netProfit],
+    ];
+    downloadCsv(`income-statement-${from}-${to}.csv`, rows);
+  };
+
   const block = (rows: Row[], total: string, label: string) => (
     <div className="mb-4">
       {rows.map((x) => (
@@ -33,6 +57,8 @@ export default function IncomeStatementPage() {
         <div className="flex gap-2">
           <input type="date" dir="ltr" className={`${inputCls} w-44`} value={from} onChange={(e) => setFrom(e.target.value)} />
           <input type="date" dir="ltr" className={`${inputCls} w-44`} value={to} onChange={(e) => setTo(e.target.value)} />
+          <button onClick={handleExport} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30 transition-colors">↓ CSV</button>
+          <button onClick={() => window.print()} className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-1.5 text-sm hover:bg-muted/30 transition-colors">⎙ Print</button>
         </div>
       </div>
       {r.data && (

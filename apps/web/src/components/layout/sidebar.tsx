@@ -93,6 +93,9 @@ const GROUPS: Group[] = [
       { href: '/dashboard/reports/sales/by-customer', en: 'Sales by Customer', ar: 'المبيعات حسب العميل', icon: BarChart3 },
       { href: '/dashboard/reports/sales/by-item', en: 'Sales by Item', ar: 'المبيعات حسب الصنف', icon: BarChart3 },
       { href: '/dashboard/reports/payroll/summary', en: 'Payroll Summary', ar: 'ملخص الرواتب', icon: Banknote },
+      { href: '/dashboard/reports/vat', en: 'VAT Dashboard', ar: 'لوحة ضريبة القيمة المضافة', icon: BarChart3 },
+      { href: '/dashboard/reports/cash-flow-forecast', en: 'Cash Flow Forecast', ar: 'توقعات التدفق النقدي', icon: BarChart3 },
+      { href: '/dashboard/reports/customers', en: 'Customer Analytics', ar: 'تحليلات العملاء', icon: BarChart3 },
     ],
   },
   {

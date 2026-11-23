@@ -9,6 +9,7 @@ import { CurrentUser } from '../modules/auth/current-user.decorator';
 import { FinancialReportsService } from './financial.service';
 import { ManagementReportsService, defaultRange } from './management.service';
 import { AnalyticsReportsService } from './analytics.service';
+import { P2AnalyticsService } from './p2-analytics.service';
 import { BudgetsService, CreateBudgetDto, BudgetQueryDto } from './budgets.service';
 import { todayIso } from './report.util';
 
@@ -34,6 +35,7 @@ export class ReportsController {
     private readonly fin: FinancialReportsService,
     private readonly mgmt: ManagementReportsService,
     private readonly analytics: AnalyticsReportsService,
+    private readonly p2: P2AnalyticsService,
   ) {}
 
   @Get('balance-sheet')
@@ -122,6 +124,21 @@ export class ReportsController {
   paymentMethods(@CurrentUser() a: AccessTokenPayload, @Query() q: RangeQueryDto) {
     const r = defaultRange();
     return this.analytics.paymentMethods(a, q.fromDate ?? r.from, q.toDate ?? r.to);
+  }
+
+  @Get('vat-dashboard')
+  vatDashboard(@CurrentUser() a: AccessTokenPayload) {
+    return this.p2.vatDashboard(a);
+  }
+
+  @Get('cash-flow-forecast')
+  cashFlowForecast(@CurrentUser() a: AccessTokenPayload) {
+    return this.p2.cashFlowForecast(a);
+  }
+
+  @Get('customer-analytics')
+  customerAnalytics(@CurrentUser() a: AccessTokenPayload) {
+    return this.p2.customerAnalytics(a);
   }
 }
 
