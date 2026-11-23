@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
 import { InvoicesService } from './invoices.service';
 
@@ -10,5 +10,10 @@ export class PortalController {
   @Get('invoice/:token')
   getInvoice(@Param('token') token: string) {
     return this.invoices.getPortalInvoice(token);
+  }
+
+  @Post('invoice/:token/acknowledge')
+  acknowledge(@Param('token') token: string) {
+    return this.invoices.acknowledgePortalInvoice(token);
   }
 }

@@ -1,7 +1,7 @@
 'use client';
 
-import { use } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { use, useState } from 'react';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import axios from 'axios';
 import { money } from '@ddotsinvoice/money';
 
@@ -17,6 +17,8 @@ interface PortalLine {
   lineTotal: string;
 }
 
+interface BankDetails { bankName: string | null; iban: string | null; accountName: string | null }
+
 interface PortalInvoice {
   id: string;
   number: string;
@@ -29,10 +31,13 @@ interface PortalInvoice {
   company: { name: string; trn?: string };
   customer: { name: string };
   lines: PortalLine[];
+  bankDetails: BankDetails | null;
+  portalPaidAcknowledgedAt: string | null;
 }
 
 export default function PortalInvoicePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
+  const [ackDone, setAckDone] = useState(false);
 
   const inv = useQuery({
     queryKey: ['portal', token],
@@ -54,7 +59,13 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ token:
     </div>
   );
 
+  const ackMut = useMutation({
+    mutationFn: async () => portalApi.post(`/portal/invoice/${token}/acknowledge`),
+    onSuccess: () => setAckDone(true),
+  });
+
   const d = inv.data;
+  const alreadyAcknowledged = !!d?.portalPaidAcknowledgedAt || ackDone;
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -136,6 +147,39 @@ export default function PortalInvoicePage({ params }: { params: Promise<{ token:
             </div>
           </div>
         </div>
+
+        {/* Pay via Bank Transfer */}
+        {(d.bankDetails || true) && (
+          <div className="px-8 py-6 border-t border-gray-100">
+            <h3 className="text-sm font-semibold text-gray-800 mb-3">Pay via Bank Transfer</h3>
+            {d.bankDetails ? (
+              <div className="bg-blue-50 rounded-xl p-4 space-y-2 text-sm">
+                {d.bankDetails.bankName && <div className="flex justify-between"><span className="text-gray-500">Bank</span><span className="font-medium text-gray-800">{d.bankDetails.bankName}</span></div>}
+                {d.bankDetails.iban && <div className="flex justify-between"><span className="text-gray-500">IBAN</span><span className="font-mono font-medium text-gray-800" dir="ltr">{d.bankDetails.iban}</span></div>}
+                {d.bankDetails.accountName && <div className="flex justify-between"><span className="text-gray-500">Account Name</span><span className="font-medium text-gray-800">{d.bankDetails.accountName}</span></div>}
+                <p className="text-xs text-gray-500 pt-1">Please use invoice number <strong>{d.number}</strong> as your payment reference.</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-500">Please contact us for bank transfer details.</p>
+            )}
+            <div className="mt-4">
+              {alreadyAcknowledged ? (
+                <div className="inline-flex items-center gap-2 rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm text-green-700 font-medium">
+                  ✓ Payment acknowledged — we will confirm receipt shortly
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => ackMut.mutate()}
+                  disabled={ackMut.isPending}
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-5 py-2.5 text-sm font-medium text-white hover:bg-green-700 transition-colors disabled:opacity-60"
+                >
+                  {ackMut.isPending ? 'Sending…' : '✓ I have made the bank transfer'}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Footer */}
         <div className="px-8 py-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">

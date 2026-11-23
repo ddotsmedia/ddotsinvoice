@@ -45,6 +45,7 @@ const GROUPS: Group[] = [
       { href: '/dashboard/purchasing/purchase-orders', en: 'Purchase Orders', ar: 'أوامر الشراء', icon: ShoppingCart },
       { href: '/dashboard/purchasing/goods-receipts', en: 'Goods Receipts', ar: 'استلام البضائع', icon: PackageCheck },
       { href: '/dashboard/purchasing/supplier-invoices', en: 'Supplier Invoices', ar: 'فواتير الموردين', icon: Receipt },
+      { href: '/dashboard/purchasing/expenses/new', en: 'New Expense (OCR)', ar: 'مصروف جديد', icon: Receipt },
       { href: '/dashboard/purchasing/inventory', en: 'Inventory', ar: 'المخزون', icon: Boxes },
     ],
   },
@@ -121,6 +122,7 @@ const SETTINGS_GROUP: Group = {
   items: [
     { href: '/dashboard/settings/company', en: 'Company Profile', ar: 'ملف الشركة', icon: Building2 },
     { href: '/dashboard/settings/team', en: 'Team', ar: 'الفريق', icon: Users },
+    { href: '/dashboard/settings/audit-log', en: 'Audit Log', ar: 'سجل التدقيق', icon: ScrollText },
   ],
 };
 

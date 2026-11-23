@@ -20,6 +20,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const [emailModal, setEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState('');
   const [portalUrl, setPortalUrl] = useState<string | null>(null);
+  const [whatsappToast, setWhatsappToast] = useState<string | null>(null);
 
   const inv = useQuery({
     queryKey: ['invoice', rid],
@@ -55,6 +56,20 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     onError: (e) => toast.error(errMsg(e)),
   });
 
+  const sendWhatsApp = async () => {
+    if (!d) return;
+    const customer = d as InvoiceRow & { customer: { name: string; phone?: string } };
+    const phone = customer.customer?.phone;
+    if (!phone) { setWhatsappToast('No phone number on file for this customer'); setTimeout(() => setWhatsappToast(null), 4000); return; }
+    let url: string;
+    try {
+      const res = await api.post<{ url: string }>(`${base}/portal-link`);
+      url = res.data.url;
+    } catch { url = window.location.href; }
+    const msg = `Dear ${customer.customer.name}, please find your invoice #${d.number} for AED ${d.total} due ${d.dueDate ?? 'on receipt'}. View & download: ${url}`;
+    window.open(`https://wa.me/${phone.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
   const sendEmailMut = useMutation({
     mutationFn: async (to: string) => (await api.post(`${base}/send-email`, { to: to || undefined })).data,
     onSuccess: () => { setEmailModal(false); toast.success('Email sent'); },
@@ -65,6 +80,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   if (!d) return <p className="text-slate-400">{inv.isError ? errMsg(inv.error) : '…'}</p>;
   const draft = d.status === 'draft' || d.status === 'sent';
   const title = { invoice: L('Invoice', 'فاتورة'), quote: L('Quote', 'عرض سعر'), credit_note: L('Credit Note', 'إشعار دائن') }[d.type];
+  const ackd = (d as InvoiceRow & { portalPaidAcknowledgedAt?: string }).portalPaidAcknowledgedAt;
 
   return (
     <div>
@@ -101,15 +117,22 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
           </div>
         </div>
       )}
+      {whatsappToast && (
+        <div className="fixed bottom-6 end-6 z-50 rounded-xl bg-amber-50 border border-amber-200 px-5 py-3 text-sm text-amber-800 shadow-lg">
+          {whatsappToast}
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold" dir="ltr">{title} {d.number}</h1>
           <p className="text-sm text-slate-500">{d.customer.name} · {d.date} · {d.status}</p>
+          {ackd && <span className="mt-1 inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1 text-xs font-medium text-amber-800">⚠ Customer acknowledged payment</span>}
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => void downloadPdf()}>{L('Download PDF', 'تحميل PDF')}</button>
           <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => { setEmailTo((d as InvoiceRow & { customer: { email?: string } }).customer?.email ?? ''); setEmailModal(true); }}>{L('Send Email', 'إرسال بريد')}</button>
           {d.type === 'invoice' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" disabled={portalLinkMut.isPending} onClick={() => portalLinkMut.mutate()}>{L('Share Portal Link', 'مشاركة رابط البوابة')}</button>}
+          {d.type === 'invoice' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm text-green-700" onClick={() => void sendWhatsApp()}>{L('Send via WhatsApp', 'إرسال واتساب')}</button>}
           {draft && d.type !== 'credit_note' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm text-red-600" onClick={() => act.mutate('delete')}>{L('Delete', 'حذف')}</button>}
           {draft && d.type === 'invoice' && <button type="button" className={btnCls} onClick={() => act.mutate('post')}>{L('Post', 'ترحيل')}</button>}
           {draft && d.type === 'quote' && <button type="button" className={btnCls} onClick={() => act.mutate('convert')}>{L('Convert to Invoice', 'تحويل إلى فاتورة')}</button>}

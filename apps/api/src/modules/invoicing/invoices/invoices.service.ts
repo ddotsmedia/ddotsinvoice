@@ -183,7 +183,7 @@ export class InvoicesService {
   private load(tx: Tx, companyId: string, id: string) {
     return this.find(tx, companyId, id).then(async (inv) => {
       const [customer] = await tx.select().from(customers).where(eq(customers.id, inv.customerId)).limit(1);
-      return { ...inv, lines: await this.lines(tx, id), customer: { id: customer?.id, name: customer?.name, trn: customer?.trn } };
+      return { ...inv, lines: await this.lines(tx, id), customer: { id: customer?.id, name: customer?.name, trn: customer?.trn, email: customer?.email, phone: customer?.phone } };
     });
   }
 
@@ -682,9 +682,23 @@ export class InvoicesService {
       throw new UnprocessableEntityException('Portal link has expired');
     }
     const lines = await this.db.select().from(invoice_lines).where(eq(invoice_lines.invoiceId, row.id)).orderBy(asc(invoice_lines.sortOrder));
-    const [company] = await this.db.select({ name: companies.name, trn: companies.trn }).from(companies).where(eq(companies.id, row.companyId)).limit(1);
+    const [company] = await this.db.select({ name: companies.name, trn: companies.trn, settings: companies.settings }).from(companies).where(eq(companies.id, row.companyId)).limit(1);
     const [customer] = await this.db.select({ name: customers.name }).from(customers).where(eq(customers.id, row.customerId)).limit(1);
-    return { id: row.id, number: row.number, date: row.date, dueDate: row.dueDate, subtotal: row.subtotal, vatAmount: row.vatAmount, total: row.total, currency: row.currency, company, customer, lines };
+    const settings = (company?.settings ?? {}) as Record<string, string>;
+    const bankDetails = settings['bankName'] || settings['iban'] ? {
+      bankName: settings['bankName'] ?? null,
+      iban: settings['iban'] ?? null,
+      accountName: settings['bankAccountName'] ?? company?.name ?? null,
+    } : null;
+    return { id: row.id, number: row.number, date: row.date, dueDate: row.dueDate, subtotal: row.subtotal, vatAmount: row.vatAmount, total: row.total, currency: row.currency, company: { name: company?.name, trn: company?.trn }, customer, lines, bankDetails, portalPaidAcknowledgedAt: row.portalPaidAcknowledgedAt };
+  }
+
+  async acknowledgePortalInvoice(token: string): Promise<{ ok: boolean }> {
+    const [row] = await this.db.select({ id: invoices.id, expiresAt: invoices.portalTokenExpiresAt }).from(invoices).where(eq(invoices.portalToken, token)).limit(1);
+    if (!row) throw new NotFoundException('Invoice not found');
+    if (!row.expiresAt || row.expiresAt < new Date()) throw new UnprocessableEntityException('Portal link has expired');
+    await this.db.update(invoices).set({ portalPaidAcknowledgedAt: new Date(), updatedAt: new Date() }).where(eq(invoices.id, row.id));
+    return { ok: true };
   }
 
   async pdf(actor: AccessTokenPayload, id: string): Promise<{ buffer: Buffer; filename: string }> {

@@ -45,6 +45,7 @@ export const invoices = pgTable('invoices', {
   parentInvoiceId: uuid('parent_invoice_id'),
   portalToken: varchar('portal_token', { length: 64 }),
   portalTokenExpiresAt: timestamp('portal_token_expires_at', { withTimezone: true }),
+  portalPaidAcknowledgedAt: timestamp('portal_paid_acknowledged_at', { withTimezone: true }),
   postedAt: timestamp('posted_at'),
   postedBy: uuid('posted_by').references(() => users.id),
   createdBy: uuid('created_by').notNull().references(() => users.id),
