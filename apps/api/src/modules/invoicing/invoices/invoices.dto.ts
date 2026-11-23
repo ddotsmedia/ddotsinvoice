@@ -1,5 +1,5 @@
 import {
-  ArrayMinSize, IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Matches, MaxLength, ValidateNested,
+  ArrayMinSize, IsBoolean, IsIn, IsInt, IsOptional, IsString, IsUUID, Length, Matches, MaxLength, ValidateNested,
 } from 'class-validator';
 import { PartialType } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
@@ -22,6 +22,8 @@ export class InvoiceLineDto {
 
 export class InvoiceDto {
   @IsUUID() customerId!: string;
+  @IsOptional() @IsBoolean() isRecurring?: boolean;
+  @IsOptional() @IsIn(['weekly', 'monthly', 'quarterly']) recurrenceInterval?: 'weekly' | 'monthly' | 'quarterly';
   @Matches(DATE) date!: string;
   @IsOptional() @IsInt() @IsIn(PAYMENT_TERMS) paymentTerms?: number;
   @IsOptional() @IsUUID() branchId?: string;

@@ -1,8 +1,10 @@
 import {
   ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException, UnprocessableEntityException,
 } from '@nestjs/common';
+import { Cron } from '@nestjs/schedule';
+import * as crypto from 'crypto';
 import * as nodemailer from 'nodemailer';
-import { and, asc, count, desc, eq, gte, inArray, isNull, lte, type SQL } from 'drizzle-orm';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, ne, type SQL } from 'drizzle-orm';
 import {
   accounts, companies, customers, Db, invoice_lines, invoices, Tx, withTenant,
 } from '@ddotsinvoice/db';
@@ -244,6 +246,9 @@ export class InvoicesService {
           notes: dto.notes,
           notesAr: dto.notesAr,
           termsAndConditions: dto.termsAndConditions,
+          isRecurring: dto.isRecurring ?? false,
+          recurrenceInterval: dto.recurrenceInterval,
+          nextRecurrenceDate: dto.isRecurring && dto.recurrenceInterval ? this.calcNextDate(dto.date, dto.recurrenceInterval) : undefined,
           fiscalYearId: fy.id,
           createdBy: actor.sub,
         })
@@ -576,6 +581,110 @@ export class InvoicesService {
       await tx.delete(invoices).where(eq(invoices.id, id));
       return { id, deleted: true };
     });
+  }
+
+  private calcNextDate(from: string, interval: string): string {
+    const d = new Date(`${from}T00:00:00Z`);
+    if (interval === 'weekly') d.setUTCDate(d.getUTCDate() + 7);
+    else if (interval === 'monthly') d.setUTCMonth(d.getUTCMonth() + 1);
+    else if (interval === 'quarterly') d.setUTCMonth(d.getUTCMonth() + 3);
+    return d.toISOString().slice(0, 10);
+  }
+
+  listRecurring(actor: AccessTokenPayload) {
+    const { tenantId, companyId } = this.scope(actor);
+    return withTenant(this.db, tenantId, (tx) =>
+      tx.select().from(invoices).where(and(eq(invoices.companyId, companyId), eq(invoices.isRecurring, true))),
+    );
+  }
+
+  @Cron('0 6 * * *')
+  async generateRecurring() {
+    const todayStr = today();
+    const rows = await this.db
+      .select()
+      .from(invoices)
+      .where(and(eq(invoices.isRecurring, true), lte(invoices.nextRecurrenceDate, todayStr), ne(invoices.status, 'draft')));
+    for (const orig of rows) {
+      await this.db.transaction(async (tx) => {
+        const origLines = await this.lines(tx, orig.id);
+        const fy = await openFyFor(tx, orig.companyId, todayStr);
+        const number = await displayNumber(tx, orig.companyId, 'INV', await nextNumber(tx, orig.companyId, 'INV', todayStr.slice(0, 4)));
+        const [inv] = await tx.insert(invoices).values({
+          tenantId: orig.tenantId,
+          companyId: orig.companyId,
+          branchId: orig.branchId,
+          customerId: orig.customerId,
+          type: 'invoice',
+          status: 'draft',
+          number,
+          date: todayStr,
+          dueDate: addDays(todayStr, orig.paymentTerms),
+          paymentTerms: orig.paymentTerms,
+          currency: orig.currency,
+          exchangeRate: orig.exchangeRate,
+          subtotal: orig.subtotal,
+          vatAmount: orig.vatAmount,
+          total: orig.total,
+          balanceDue: orig.total,
+          notes: orig.notes,
+          notesAr: orig.notesAr,
+          termsAndConditions: orig.termsAndConditions,
+          parentInvoiceId: orig.id,
+          fiscalYearId: fy.id,
+          createdBy: orig.createdBy,
+        }).returning();
+        await tx.insert(invoice_lines).values(
+          origLines.map((l) => ({
+            tenantId: orig.tenantId,
+            companyId: orig.companyId,
+            invoiceId: inv.id,
+            sortOrder: l.sortOrder,
+            description: l.description,
+            descriptionAr: l.descriptionAr,
+            quantity: l.quantity,
+            unitPrice: l.unitPrice,
+            discountPct: l.discountPct,
+            discountAmount: l.discountAmount,
+            lineSubtotal: l.lineSubtotal,
+            vatType: l.vatType,
+            vatRate: l.vatRate,
+            vatAmount: l.vatAmount,
+            lineTotal: l.lineTotal,
+            revenueAccountId: l.revenueAccountId,
+          })),
+        );
+        const nextDate = this.calcNextDate(todayStr, orig.recurrenceInterval ?? 'monthly');
+        await tx.update(invoices).set({ nextRecurrenceDate: nextDate, updatedAt: new Date() }).where(eq(invoices.id, orig.id));
+      });
+    }
+  }
+
+  async generatePortalLink(actor: AccessTokenPayload, id: string): Promise<{ url: string }> {
+    const { tenantId, companyId } = this.scope(actor);
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await withTenant(this.db, tenantId, async (tx) => {
+      await this.find(tx, companyId, id);
+      await tx.update(invoices).set({ portalToken: token, portalTokenExpiresAt: expiresAt, updatedAt: new Date() }).where(eq(invoices.id, id));
+    });
+    return { url: `${process.env.APP_URL ?? 'https://ddinvoice.com'}/portal/invoice/${token}` };
+  }
+
+  async getPortalInvoice(token: string) {
+    const [row] = await this.db
+      .select()
+      .from(invoices)
+      .where(eq(invoices.portalToken, token))
+      .limit(1);
+    if (!row) throw new NotFoundException('Invoice not found');
+    if (!row.portalTokenExpiresAt || row.portalTokenExpiresAt < new Date()) {
+      throw new UnprocessableEntityException('Portal link has expired');
+    }
+    const lines = await this.db.select().from(invoice_lines).where(eq(invoice_lines.invoiceId, row.id)).orderBy(asc(invoice_lines.sortOrder));
+    const [company] = await this.db.select({ name: companies.name, trn: companies.trn }).from(companies).where(eq(companies.id, row.companyId)).limit(1);
+    const [customer] = await this.db.select({ name: customers.name }).from(customers).where(eq(customers.id, row.customerId)).limit(1);
+    return { id: row.id, number: row.number, date: row.date, dueDate: row.dueDate, subtotal: row.subtotal, vatAmount: row.vatAmount, total: row.total, currency: row.currency, company, customer, lines };
   }
 
   async pdf(actor: AccessTokenPayload, id: string): Promise<{ buffer: Buffer; filename: string }> {

@@ -19,6 +19,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const base = `/invoicing/invoices/${rid}`;
   const [emailModal, setEmailModal] = useState(false);
   const [emailTo, setEmailTo] = useState('');
+  const [portalUrl, setPortalUrl] = useState<string | null>(null);
 
   const inv = useQuery({
     queryKey: ['invoice', rid],
@@ -48,6 +49,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     URL.revokeObjectURL(url);
   };
 
+  const portalLinkMut = useMutation({
+    mutationFn: async () => (await api.post<{ url: string }>(`${base}/portal-link`)).data,
+    onSuccess: (data) => setPortalUrl(data.url),
+    onError: (e) => toast.error(errMsg(e)),
+  });
+
   const sendEmailMut = useMutation({
     mutationFn: async (to: string) => (await api.post(`${base}/send-email`, { to: to || undefined })).data,
     onSuccess: () => { setEmailModal(false); toast.success('Email sent'); },
@@ -61,6 +68,19 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
+      {portalUrl && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+            <h2 className="mb-4 text-lg font-semibold">{L('Portal Link', 'رابط البوابة')}</h2>
+            <p className="mb-2 text-xs text-slate-500">{L('Share this link with your customer. Valid 30 days.', 'شارك هذا الرابط مع عميلك. صالح 30 يوماً.')}</p>
+            <input readOnly className="mb-4 w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm" value={portalUrl} onClick={(e) => (e.target as HTMLInputElement).select()} />
+            <div className="flex gap-2 justify-end">
+              <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => { void navigator.clipboard.writeText(portalUrl); toast.success(L('Copied!', 'تم النسخ!')); }}>{L('Copy', 'نسخ')}</button>
+              <button type="button" className={btnCls} onClick={() => setPortalUrl(null)}>{L('Close', 'إغلاق')}</button>
+            </div>
+          </div>
+        </div>
+      )}
       {emailModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
@@ -89,6 +109,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         <div className="flex flex-wrap gap-2">
           <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => void downloadPdf()}>{L('Download PDF', 'تحميل PDF')}</button>
           <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => { setEmailTo((d as InvoiceRow & { customer: { email?: string } }).customer?.email ?? ''); setEmailModal(true); }}>{L('Send Email', 'إرسال بريد')}</button>
+          {d.type === 'invoice' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" disabled={portalLinkMut.isPending} onClick={() => portalLinkMut.mutate()}>{L('Share Portal Link', 'مشاركة رابط البوابة')}</button>}
           {draft && d.type !== 'credit_note' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm text-red-600" onClick={() => act.mutate('delete')}>{L('Delete', 'حذف')}</button>}
           {draft && d.type === 'invoice' && <button type="button" className={btnCls} onClick={() => act.mutate('post')}>{L('Post', 'ترحيل')}</button>}
           {draft && d.type === 'quote' && <button type="button" className={btnCls} onClick={() => act.mutate('convert')}>{L('Convert to Invoice', 'تحويل إلى فاتورة')}</button>}

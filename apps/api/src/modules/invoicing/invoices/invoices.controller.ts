@@ -22,6 +22,11 @@ export class InvoicesController {
     return this.invoices.list(actor, q);
   }
 
+  @Get('recurring')
+  listRecurring(@CurrentUser() actor: AccessTokenPayload) {
+    return this.invoices.listRecurring(actor);
+  }
+
   @Get(':id')
   get(@CurrentUser() actor: AccessTokenPayload, @Param('id', ParseUUIDPipe) id: string) {
     return this.invoices.getById(actor, id);
@@ -76,6 +81,11 @@ export class InvoicesController {
     @Body() dto: CreditNoteDto,
   ) {
     return this.invoices.createCreditNote(actor, id, dto);
+  }
+
+  @Post(':id/portal-link')
+  portalLink(@CurrentUser() actor: AccessTokenPayload, @Param('id', ParseUUIDPipe) id: string) {
+    return this.invoices.generatePortalLink(actor, id);
   }
 
   @Post(':id/send-email')

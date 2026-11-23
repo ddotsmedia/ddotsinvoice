@@ -71,6 +71,16 @@ main {
 ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
 
+/* RTL layout support */
+[dir="rtl"] .sidebar {
+  right: 0;
+  left: auto;
+}
+[dir="rtl"] .main-content {
+  margin-right: 240px;
+  margin-left: 0;
+}
+
 /* Card hover elevation */
 .hover-lift {
   transition: box-shadow 0.2s ease, transform 0.2s ease;

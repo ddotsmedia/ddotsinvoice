@@ -36,6 +36,8 @@ function NewInvoiceInner() {
   const [terms, setTerms] = useState<number | ''>('');
   const [notes, setNotes] = useState('');
   const [lines, setLines] = useState<Line[]>([blank()]);
+  const [isRecurring, setIsRecurring] = useState(false);
+  const [recurrenceInterval, setRecurrenceInterval] = useState<'weekly' | 'monthly' | 'quarterly'>('monthly');
 
   const customers = useQuery({
     queryKey: ['customers', ''],
@@ -63,6 +65,8 @@ function NewInvoiceInner() {
           discountPct: l.discountPct || '0',
           vatType: l.vatType,
         })),
+        isRecurring: type === 'invoice' ? isRecurring : undefined,
+        recurrenceInterval: type === 'invoice' && isRecurring ? recurrenceInterval : undefined,
       };
       const { data } = await api.post<{ id: string }>('/invoicing/invoices', body);
       if (andPost) await api.post(`/invoicing/invoices/${data.id}/post`);
@@ -133,6 +137,22 @@ function NewInvoiceInner() {
           </table>
         </div>
         <button type="button" className="text-sm text-primary hover:underline" onClick={() => setLines((ls) => [...ls, blank()])}>+ {L('Add line', 'إضافة سطر')}</button>
+
+        {type === 'invoice' && (
+          <div className="flex items-center gap-4">
+            <label className="flex items-center gap-2 text-sm cursor-pointer">
+              <input type="checkbox" checked={isRecurring} onChange={(e) => setIsRecurring(e.target.checked)} className="h-4 w-4 rounded border-border" />
+              {L('Make Recurring', 'تكرار الفاتورة')}
+            </label>
+            {isRecurring && (
+              <select className={inputCls + ' w-40'} value={recurrenceInterval} onChange={(e) => setRecurrenceInterval(e.target.value as 'weekly' | 'monthly' | 'quarterly')}>
+                <option value="weekly">{L('Weekly', 'أسبوعي')}</option>
+                <option value="monthly">{L('Monthly', 'شهري')}</option>
+                <option value="quarterly">{L('Quarterly', 'ربع سنوي')}</option>
+              </select>
+            )}
+          </div>
+        )}
 
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label={L('Notes', 'ملاحظات')}><textarea className={inputCls} rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} /></Field>

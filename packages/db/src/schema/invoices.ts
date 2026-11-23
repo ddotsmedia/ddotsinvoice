@@ -1,4 +1,4 @@
-import { pgTable, pgEnum, uuid, varchar, text, date, integer, numeric, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, uuid, varchar, text, date, integer, numeric, timestamp, boolean, uniqueIndex } from 'drizzle-orm/pg-core';
 import { tenants } from './tenants';
 import { companies } from './companies';
 import { branches } from './branches';
@@ -39,6 +39,12 @@ export const invoices = pgTable('invoices', {
   convertedFromId: uuid('converted_from_id'), // quote→invoice
   creditNoteForId: uuid('credit_note_for_id'), // credit note → original invoice
   fiscalYearId: uuid('fiscal_year_id').notNull().references(() => fiscalYears.id),
+  isRecurring: boolean('is_recurring').default(false),
+  recurrenceInterval: varchar('recurrence_interval', { length: 10 }),
+  nextRecurrenceDate: date('next_recurrence_date'),
+  parentInvoiceId: uuid('parent_invoice_id'),
+  portalToken: varchar('portal_token', { length: 64 }),
+  portalTokenExpiresAt: timestamp('portal_token_expires_at', { withTimezone: true }),
   postedAt: timestamp('posted_at'),
   postedBy: uuid('posted_by').references(() => users.id),
   createdBy: uuid('created_by').notNull().references(() => users.id),
