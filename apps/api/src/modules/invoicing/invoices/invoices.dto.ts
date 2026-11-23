@@ -44,6 +44,19 @@ export class CreditNoteDto {
   @IsOptional() @ValidateNested({ each: true }) @Type(() => InvoiceLineDto) @ArrayMinSize(1) lines?: InvoiceLineDto[];
 }
 
+export class SendEmailDto {
+  @IsOptional() @IsString() to?: string;
+}
+
+export class BulkActionDto {
+  @IsUUID('all', { each: true }) @ArrayMinSize(1) ids!: string[];
+  @IsIn(['mark_sent']) action!: 'mark_sent';
+}
+
+export class BulkDeleteDto {
+  @IsUUID('all', { each: true }) @ArrayMinSize(1) ids!: string[];
+}
+
 export class InvoiceQueryDto extends PageQueryDto {
   @IsOptional() @IsIn(['quote', 'invoice', 'credit_note']) type?: 'quote' | 'invoice' | 'credit_note';
   @IsOptional() @IsString() status?: string;

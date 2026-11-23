@@ -1,6 +1,6 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +17,8 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
   const router = useRouter();
   const qc = useQueryClient();
   const base = `/invoicing/invoices/${rid}`;
+  const [emailModal, setEmailModal] = useState(false);
+  const [emailTo, setEmailTo] = useState('');
 
   const inv = useQuery({
     queryKey: ['invoice', rid],
@@ -46,6 +48,12 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
     URL.revokeObjectURL(url);
   };
 
+  const sendEmailMut = useMutation({
+    mutationFn: async (to: string) => (await api.post(`${base}/send-email`, { to: to || undefined })).data,
+    onSuccess: () => { setEmailModal(false); toast.success('Email sent'); },
+    onError: (e) => toast.error(errMsg(e)),
+  });
+
   const d = inv.data;
   if (!d) return <p className="text-slate-400">{inv.isError ? errMsg(inv.error) : '…'}</p>;
   const draft = d.status === 'draft' || d.status === 'sent';
@@ -53,6 +61,26 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
 
   return (
     <div>
+      {emailModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="w-full max-w-sm rounded-xl bg-white p-6 shadow-xl dark:bg-slate-900">
+            <h2 className="mb-4 text-lg font-semibold">{L('Send Invoice', 'إرسال الفاتورة')}</h2>
+            <input
+              type="email"
+              className="mb-4 w-full rounded-md border border-border bg-transparent px-3 py-2 text-sm"
+              placeholder={L('Recipient email', 'بريد المستلم')}
+              value={emailTo}
+              onChange={(e) => setEmailTo(e.target.value)}
+            />
+            <div className="flex gap-2 justify-end">
+              <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => setEmailModal(false)}>{L('Cancel', 'إلغاء')}</button>
+              <button type="button" className={btnCls} disabled={sendEmailMut.isPending} onClick={() => sendEmailMut.mutate(emailTo)}>
+                {sendEmailMut.isPending ? '…' : L('Send', 'إرسال')}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       <div className="mb-6 flex flex-wrap items-center justify-between gap-2">
         <div>
           <h1 className="text-2xl font-semibold" dir="ltr">{title} {d.number}</h1>
@@ -60,6 +88,7 @@ export default function InvoiceDetailPage({ params }: { params: Promise<{ id: st
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => void downloadPdf()}>{L('Download PDF', 'تحميل PDF')}</button>
+          <button type="button" className="rounded-md border border-border px-4 py-2 text-sm" onClick={() => { setEmailTo((d as InvoiceRow & { customer: { email?: string } }).customer?.email ?? ''); setEmailModal(true); }}>{L('Send Email', 'إرسال بريد')}</button>
           {draft && d.type !== 'credit_note' && <button type="button" className="rounded-md border border-border px-4 py-2 text-sm text-red-600" onClick={() => act.mutate('delete')}>{L('Delete', 'حذف')}</button>}
           {draft && d.type === 'invoice' && <button type="button" className={btnCls} onClick={() => act.mutate('post')}>{L('Post', 'ترحيل')}</button>}
           {draft && d.type === 'quote' && <button type="button" className={btnCls} onClick={() => act.mutate('convert')}>{L('Convert to Invoice', 'تحويل إلى فاتورة')}</button>}

@@ -7,7 +7,7 @@ import { Roles } from '../../auth/roles.decorator';
 import { RolesGuard } from '../../auth/roles.guard';
 import { CurrentUser } from '../../auth/current-user.decorator';
 import { InvoicesService } from './invoices.service';
-import { CreateInvoiceDto, CreditNoteDto, InvoiceQueryDto, UpdateInvoiceDto } from './invoices.dto';
+import { BulkActionDto, BulkDeleteDto, CreateInvoiceDto, CreditNoteDto, InvoiceQueryDto, SendEmailDto, UpdateInvoiceDto } from './invoices.dto';
 
 @ApiTags('invoicing')
 @ApiBearerAuth()
@@ -76,6 +76,25 @@ export class InvoicesController {
     @Body() dto: CreditNoteDto,
   ) {
     return this.invoices.createCreditNote(actor, id, dto);
+  }
+
+  @Post(':id/send-email')
+  sendEmail(
+    @CurrentUser() actor: AccessTokenPayload,
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: SendEmailDto,
+  ) {
+    return this.invoices.sendEmail(actor, id, dto);
+  }
+
+  @Patch('bulk')
+  bulkAction(@CurrentUser() actor: AccessTokenPayload, @Body() dto: BulkActionDto) {
+    return this.invoices.bulkAction(actor, dto);
+  }
+
+  @Delete('bulk')
+  bulkDelete(@CurrentUser() actor: AccessTokenPayload, @Body() dto: BulkDeleteDto) {
+    return this.invoices.bulkDelete(actor, dto);
   }
 
   @Delete(':id')

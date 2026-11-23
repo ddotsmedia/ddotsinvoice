@@ -1,7 +1,8 @@
 import {
-  ConflictException, Inject, Injectable, NotFoundException, UnprocessableEntityException,
+  ConflictException, Inject, Injectable, NotFoundException, ServiceUnavailableException, UnprocessableEntityException,
 } from '@nestjs/common';
-import { and, asc, count, desc, eq, gte, isNull, lte, type SQL } from 'drizzle-orm';
+import * as nodemailer from 'nodemailer';
+import { and, asc, count, desc, eq, gte, inArray, isNull, lte, type SQL } from 'drizzle-orm';
 import {
   accounts, companies, customers, Db, invoice_lines, invoices, Tx, withTenant,
 } from '@ddotsinvoice/db';
@@ -22,7 +23,7 @@ import { postJournal, reverseJournal } from '../../accounting/journal-posting';
 import { calcLine, calcTotals, CalcLine, LineInput } from '../invoice-calc';
 import { PdfService } from './pdf.service';
 import { renderInvoiceHtml } from './invoice-html';
-import { CreateInvoiceDto, CreditNoteDto, InvoiceQueryDto, UpdateInvoiceDto } from './invoices.dto';
+import { BulkActionDto, BulkDeleteDto, CreateInvoiceDto, CreditNoteDto, InvoiceQueryDto, SendEmailDto, UpdateInvoiceDto } from './invoices.dto';
 
 type Inv = typeof invoices.$inferSelect;
 type LineRow = typeof invoice_lines.$inferSelect;
@@ -500,6 +501,66 @@ export class InvoicesService {
         .set({ balanceDue: M.toDb(remaining.lessThan(0) ? M.money(0) : remaining), updatedAt: new Date() })
         .where(eq(invoices.id, orig.id));
       return this.load(tx, companyId, cn.id);
+    });
+  }
+
+  async sendEmail(actor: AccessTokenPayload, id: string, dto: SendEmailDto): Promise<{ sent: true; to: string }> {
+    const smtpHost = process.env.SMTP_HOST;
+    const smtpPort = Number(process.env.SMTP_PORT ?? 587);
+    const smtpUser = process.env.SMTP_USER;
+    const smtpPass = process.env.SMTP_PASS;
+    const smtpFrom = process.env.SMTP_FROM;
+    if (!smtpHost || !smtpUser || !smtpPass || !smtpFrom) {
+      throw new ServiceUnavailableException('Email not configured');
+    }
+    const { tenantId, companyId } = this.scope(actor);
+    const doc = await withTenant(this.db, tenantId, async (tx) => {
+      const inv = await this.find(tx, companyId, id);
+      const customer = await this.customerOf(tx, companyId, inv.customerId);
+      const [company] = await tx.select().from(companies).where(eq(companies.id, companyId)).limit(1);
+      return { inv, customer, company, lines: await this.lines(tx, id) };
+    });
+    const to = dto.to ?? doc.customer.email ?? '';
+    if (!to) throw new UnprocessableEntityException('No recipient email address');
+    const html = renderInvoiceHtml({ ...doc });
+    const pdfBuffer = await this.pdfService.render(html);
+    const transport = nodemailer.createTransport({
+      host: smtpHost, port: smtpPort, secure: smtpPort === 465,
+      auth: { user: smtpUser, pass: smtpPass },
+    });
+    await transport.sendMail({
+      from: smtpFrom,
+      to,
+      subject: `Invoice ${doc.inv.number} — AED ${parseFloat(doc.inv.total).toFixed(2)}`,
+      text: `Dear ${doc.customer.name},\n\nPlease find attached your invoice #${doc.inv.number} for AED ${parseFloat(doc.inv.total).toFixed(2)}.\nDue date: ${doc.inv.dueDate ?? 'N/A'}.\n\nThank you for your business.`,
+      attachments: [{ filename: `${doc.inv.number}.pdf`, content: pdfBuffer, contentType: 'application/pdf' }],
+    });
+    return { sent: true, to };
+  }
+
+  bulkAction(actor: AccessTokenPayload, dto: BulkActionDto) {
+    const { tenantId, companyId } = this.scope(actor);
+    return withTenant(this.db, tenantId, async (tx) => {
+      await tx
+        .update(invoices)
+        .set({ status: 'sent', updatedAt: new Date() })
+        .where(and(eq(invoices.companyId, companyId), inArray(invoices.id, dto.ids)));
+      return { updated: dto.ids.length };
+    });
+  }
+
+  bulkDelete(actor: AccessTokenPayload, dto: BulkDeleteDto) {
+    const { tenantId, companyId } = this.scope(actor);
+    return withTenant(this.db, tenantId, async (tx) => {
+      const rows = await tx
+        .select({ id: invoices.id, status: invoices.status })
+        .from(invoices)
+        .where(and(eq(invoices.companyId, companyId), inArray(invoices.id, dto.ids)));
+      const draftIds = rows.filter((r) => r.status === 'draft' || r.status === 'sent').map((r) => r.id);
+      if (!draftIds.length) return { deleted: 0 };
+      await tx.delete(invoice_lines).where(inArray(invoice_lines.invoiceId, draftIds));
+      await tx.delete(invoices).where(inArray(invoices.id, draftIds));
+      return { deleted: draftIds.length };
     });
   }
 
