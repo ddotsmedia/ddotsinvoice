@@ -5,6 +5,8 @@ import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
 import { AuthService, hashToken } from './auth.service';
 import { LoginDto, RegisterTenantDto } from './auth.dto';
+import { InvitationsService } from '../invitations/invitations.service';
+import { AcceptInviteDto } from '../invitations/invitations.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
 import { CurrentUser } from './current-user.decorator';
 
@@ -22,7 +24,10 @@ const COOKIE_OPTS = {
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly auth: AuthService) {}
+  constructor(
+    private readonly auth: AuthService,
+    private readonly invitations: InvitationsService,
+  ) {}
 
   @Post('register-tenant')
   @HttpCode(201)
@@ -38,6 +43,17 @@ export class AuthController {
   @Throttle({ 'auth-login': { ttl: 15 * 60 * 1000, limit: 5 } })
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.login(dto.email.toLowerCase(), dto.password);
+    res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    return { accessToken, user };
+  }
+
+  // Public: the single-use invitation token is the credential
+  @Post('accept-invite')
+  @HttpCode(200)
+  @Throttle({ 'auth-login': { ttl: 15 * 60 * 1000, limit: 5 } })
+  async acceptInvite(@Body() dto: AcceptInviteDto, @Res({ passthrough: true }) res: FastifyReply) {
+    const created = await this.invitations.accept(dto);
+    const { accessToken, refreshToken, user } = await this.auth.issue(created);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
     return { accessToken, user };
   }

@@ -64,6 +64,13 @@
       "when": 1794225760000,
       "tag": "0008_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1794312160000,
+      "tag": "0009_invitations_notifications",
+      "breakpoints": true
     }
   ]
 }

@@ -21,6 +21,9 @@ import { PaymentsModule } from './payments/payments.module';
 import { HrModule } from './hr/hr.module';
 import { ReportsModule } from './reports/reports.module';
 import { DashboardModule } from './modules/dashboard/dashboard.module';
+import { ScheduleModule } from '@nestjs/schedule';
+import { InvitationsModule } from './modules/invitations/invitations.module';
+import { NotificationsModule } from './modules/notifications/notifications.module';
 
 @Module({
   imports: [
@@ -45,6 +48,9 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
     HrModule,
     ReportsModule,
     DashboardModule,
+    InvitationsModule,
+    NotificationsModule,
+    ScheduleModule.forRoot(),
     SuperAdminModule,
     AdminModule,
   ],

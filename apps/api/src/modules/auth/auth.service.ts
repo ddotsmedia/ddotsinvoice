@@ -116,7 +116,7 @@ export class AuthService {
     return this.issue(updated);
   }
 
-  private async issue(user: UserRow) {
+  async issue(user: UserRow) {
     const payload: AccessTokenPayload = {
       sub: user.id,
       tenantId: user.tenantId,

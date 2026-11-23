@@ -4,9 +4,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtStrategy } from './jwt.strategy';
+import { InvitationsModule } from '../invitations/invitations.module';
 
 @Module({
   imports: [
+    InvitationsModule,
     JwtModule.registerAsync({
       inject: [ConfigService],
       useFactory: (c: ConfigService) => ({
