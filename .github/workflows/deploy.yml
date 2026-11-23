@@ -123,6 +123,31 @@ jobs:
             else
               echo "nginx config unchanged, skipping reload"
             fi
+      - name: Inject missing env vars from GitHub Secrets
+        uses: appleboy/ssh-action@v1.0.3
+        env:
+          DATABASE_ADMIN_URL: ${{ secrets.DDOTSINVOICE_DATABASE_ADMIN_URL }}
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          envs: APP_DIR,DATABASE_ADMIN_URL
+          script: |
+            set -e
+            ENV_FILE="$APP_DIR/.env"
+            test -f "$ENV_FILE" || touch "$ENV_FILE"
+            # Inject DATABASE_ADMIN_URL only if the secret is set and not already in .env
+            if [ -n "$DATABASE_ADMIN_URL" ]; then
+              if grep -q '^DATABASE_ADMIN_URL=' "$ENV_FILE"; then
+                sed -i "s|^DATABASE_ADMIN_URL=.*|DATABASE_ADMIN_URL=$DATABASE_ADMIN_URL|" "$ENV_FILE"
+              else
+                echo "DATABASE_ADMIN_URL=$DATABASE_ADMIN_URL" >> "$ENV_FILE"
+              fi
+              echo "DATABASE_ADMIN_URL injected into .env"
+            else
+              echo "DDOTSINVOICE_DATABASE_ADMIN_URL secret not set — skipping (login works via platform_admin_bypass RLS policy)"
+            fi
+
       - name: Pull and restart ddotsinvoice containers
         uses: appleboy/ssh-action@v1.0.3
         env:

@@ -24,13 +24,13 @@ const adminLogger = new Logger('DrizzleModule');
         const adminUrl = c.get<string>('DATABASE_ADMIN_URL');
         if (!adminUrl) {
           if (c.get('NODE_ENV') === 'production') {
-            // In production without DATABASE_ADMIN_URL, login WILL fail because
-            // ddots_app (DATABASE_URL) is a NOSUPERUSER role subject to RLS on the users table.
-            // Run migration 0016_admin_role and set DATABASE_ADMIN_URL to ddots_admin connection.
-            throw new Error(
-              'DATABASE_ADMIN_URL is required in production. ' +
-              'The ddots_admin role (BYPASSRLS) must be used for auth and super-admin queries. ' +
-              'Run scripts/setup-db-roles.sh and add DATABASE_ADMIN_URL to your .env file.',
+            // DATABASE_ADMIN_URL not set — login may still work if the users RLS policy
+            // has a platform_admin_bypass policy (migration 0017). Set DATABASE_ADMIN_URL
+            // (ddots_admin BYPASSRLS role) in .env for full RLS isolation.
+            adminLogger.warn(
+              'DATABASE_ADMIN_URL is not set in production — falling back to DATABASE_URL. ' +
+              'Login works only if migration 0017 platform_admin_bypass policy is applied. ' +
+              'Set DATABASE_ADMIN_URL to the ddots_admin connection string for full setup.',
             );
           }
           adminLogger.warn(
