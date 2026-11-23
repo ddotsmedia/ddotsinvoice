@@ -78,6 +78,8 @@ jobs:
           build-args: |
             NEXT_PUBLIC_API_URL=https://ddinvoice.com/api
           tags: ghcr.io/ddotsmedia/ddotsinvoice-super-admin:latest
+      - name: Clean up build cache
+        run: docker builder prune -f || true
 
   deploy:
     needs: build-docker
@@ -196,3 +198,22 @@ jobs:
 
             docker compose -p ddotsinvoice -f docker-compose.prod.yml up -d
             docker compose -p ddotsinvoice -f docker-compose.prod.yml ps
+
+      - name: Clean up old ddotsinvoice images on VPS
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          script: |
+            # Remove old ddotsinvoice images only (keep latest 2) — never touches other projects
+            docker images ghcr.io/ddotsmedia/ddotsinvoice* --format "{{.ID}} {{.CreatedAt}}" \
+              | sort -k2 -r \
+              | tail -n +3 \
+              | awk '{print $1}' \
+              | xargs -r docker rmi --force || true
+
+            # Remove dangling images (untagged layers from builds)
+            docker image prune -f || true
+
+            echo "ddotsinvoice image cleanup complete"
