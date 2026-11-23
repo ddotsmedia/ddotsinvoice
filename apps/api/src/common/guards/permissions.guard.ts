@@ -1,7 +1,7 @@
 import { CanActivate, ExecutionContext, ForbiddenException, Inject, Injectable, SetMetadata, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
-import { and, eq, isNull, or } from 'drizzle-orm';
+import { and, eq, isNull, or, sql } from 'drizzle-orm';
 import { companies, Db, rolePermissions } from '@ddotsinvoice/db';
 import { AccessTokenPayload, UserRole } from '@ddotsinvoice/shared';
 import { ADMIN_DB } from '../../infra/drizzle.module';
@@ -70,12 +70,18 @@ export class PermissionsGuard implements CanActivate {
   }
 
   private async assertCompanyInTenant(actor: AccessTokenPayload, companyId: string): Promise<void> {
-    if (!UUID.test(companyId) || !actor.tenantId) throw new ForbiddenException('Invalid company');
-    const [c] = await this.db
-      .select({ id: companies.id })
-      .from(companies)
-      .where(and(eq(companies.id, companyId), eq(companies.tenantId, actor.tenantId), isNull(companies.deletedAt)))
-      .limit(1);
+    if (!UUID.test(companyId)) throw new ForbiddenException('Invalid company');
+    // platform_admin has no tenant — they can operate on any company; skip tenant-scoped check
+    if (!actor.tenantId) return;
+    // Set tenant context in a transaction so the companies RLS policy is satisfied
+    const [c] = await this.db.transaction(async (tx) => {
+      await tx.execute(sql`SELECT set_config('app.tenant_id', ${actor.tenantId!}, true)`);
+      return tx
+        .select({ id: companies.id })
+        .from(companies)
+        .where(and(eq(companies.id, companyId), eq(companies.tenantId, actor.tenantId!), isNull(companies.deletedAt)))
+        .limit(1);
+    });
     if (!c) throw new ForbiddenException('Company not found in tenant');
   }
 

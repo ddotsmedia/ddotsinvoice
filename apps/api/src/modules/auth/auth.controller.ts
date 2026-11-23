@@ -89,7 +89,7 @@ export class AuthController {
   @ApiBearerAuth()
   @SkipThrottle({ 'auth-login': true, 'auth-register': true })
   me(@CurrentUser() actor: AccessTokenPayload) {
-    return this.auth.me(actor.sub);
+    return this.auth.me(actor);
   }
 
   /** One-time: attach a tenant to a user who was created without one */

@@ -134,6 +134,13 @@
       "when": 1795800000000,
       "tag": "0018_fix_admin_seed",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1795900000000,
+      "tag": "0019_refresh_token_tenant",
+      "breakpoints": true
     }
   ]
 }

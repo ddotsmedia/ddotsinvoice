@@ -2,7 +2,7 @@ import { ConflictException, Inject, Injectable, UnauthorizedException } from '@n
 import { JwtService } from '@nestjs/jwt';
 import * as argon2 from 'argon2';
 import { createHash, randomBytes } from 'crypto';
-import { and, eq, gt, isNull } from 'drizzle-orm';
+import { and, eq, gt, isNull, sql } from 'drizzle-orm';
 import { companies, Db, refreshTokens, tenants, users } from '@ddotsinvoice/db';
 import { AccessTokenPayload, UserRole } from '@ddotsinvoice/shared';
 import { ADMIN_DB } from '../../infra/drizzle.module';
@@ -57,11 +57,22 @@ export class AuthService {
       .limit(1);
     if (!row) throw new UnauthorizedException();
 
-    const [user] = await this.db
-      .select()
-      .from(users)
-      .where(and(eq(users.id, row.userId), eq(users.isActive, true), isNull(users.deletedAt)))
-      .limit(1);
+    // refreshTokens has no RLS; now query users with tenant context if available.
+    // row.tenantId may be null (platform_admin) or a tenant UUID (regular user).
+    let user: UserRow | undefined;
+    if (row.tenantId) {
+      [user] = await this.db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT set_config('app.tenant_id', ${row.tenantId!}, true)`);
+        return tx.select().from(users).where(and(eq(users.id, row.userId), eq(users.isActive, true), isNull(users.deletedAt))).limit(1);
+      });
+    } else {
+      // platform_admin or legacy token without tenantId: rely on platform_admin_bypass RLS policy
+      [user] = await this.db
+        .select()
+        .from(users)
+        .where(and(eq(users.id, row.userId), eq(users.isActive, true), isNull(users.deletedAt)))
+        .limit(1);
+    }
     if (!user) throw new UnauthorizedException();
 
     await this.db.delete(refreshTokens).where(eq(refreshTokens.id, row.id)); // rotate
@@ -104,10 +115,23 @@ export class AuthService {
     return this.issue(user);
   }
 
-  async me(userId: string) {
-    const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
-    if (!user) throw new UnauthorizedException();
-    return publicUser(user);
+  async me(actor: AccessTokenPayload) {
+    const userId = actor.sub;
+    const tenantId = actor.tenantId;
+
+    let row: UserRow | undefined;
+    if (tenantId) {
+      // Regular user: set tenant context so RLS policy is satisfied
+      [row] = await this.db.transaction(async (tx) => {
+        await tx.execute(sql`SELECT set_config('app.tenant_id', ${tenantId}, true)`);
+        return tx.select().from(users).where(and(eq(users.id, userId), eq(users.tenantId, tenantId))).limit(1);
+      });
+    } else {
+      // platform_admin: tenant_id IS NULL — platform_admin_bypass RLS policy covers this
+      [row] = await this.db.select().from(users).where(and(eq(users.id, userId), isNull(users.tenantId))).limit(1);
+    }
+    if (!row) throw new UnauthorizedException();
+    return publicUser(row);
   }
 
   /** Creates a tenant for a user who has no tenantId (e.g. created via super-admin without tenant) */
@@ -132,6 +156,7 @@ export class AuthService {
     const refreshToken = randomBytes(32).toString('base64url');
     await this.db.insert(refreshTokens).values({
       userId: user.id,
+      tenantId: user.tenantId,
       tokenHash: hashToken(refreshToken),
       expiresAt: new Date(Date.now() + REFRESH_TTL_MS),
     });

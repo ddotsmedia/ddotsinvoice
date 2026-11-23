@@ -31,6 +31,7 @@ export const users = pgTable('users', {
 export const refreshTokens = pgTable('refresh_tokens', {
   id: uuid('id').primaryKey().defaultRandom(),
   userId: uuid('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  tenantId: uuid('tenant_id'),  // null for platform_admin; used to set RLS context on refresh
   tokenHash: text('token_hash').notNull(),
   expiresAt: timestamp('expires_at').notNull(),
   createdAt: timestamp('created_at').notNull().defaultNow(),
