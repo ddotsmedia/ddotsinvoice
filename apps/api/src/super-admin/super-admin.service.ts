@@ -52,7 +52,20 @@ export class SuperAdminService implements OnApplicationBootstrap {
   /** Seeds the platform super admin once. Production requires SUPER_ADMIN_PASSWORD to be set. */
   async onApplicationBootstrap(): Promise<void> {
     const email = (this.config.get<string>('SUPER_ADMIN_EMAIL') ?? 'sadmin@ddotsmedia.com').toLowerCase();
-    const password = this.config.get<string>('SUPER_ADMIN_PASSWORD') ?? (this.config.get('NODE_ENV') === 'production' ? undefined : 'SuperAdmin2026!');
+    const isProduction = this.config.get('NODE_ENV') === 'production';
+    const password = this.config.get<string>('SUPER_ADMIN_PASSWORD') ?? (isProduction ? undefined : 'SuperAdmin2026!');
+    if (!password && isProduction) {
+      this.logger.warn(
+        '========================================================\n' +
+        'SUPER_ADMIN_PASSWORD is not set in production.\n' +
+        'No platform super admin will be seeded.\n' +
+        'Set SUPER_ADMIN_PASSWORD in your .env and restart the API\n' +
+        `to seed the super admin account (${email}).\n` +
+        'Without it, only users who registered via /register can log in.\n' +
+        '========================================================',
+      );
+      return;
+    }
     try {
       const [existing] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
       if (existing || !password) return;
@@ -64,6 +77,7 @@ export class SuperAdminService implements OnApplicationBootstrap {
         firstName: 'Platform',
         lastName: 'Admin',
         role: UserRole.SUPER_ADMIN,
+        isActive: true,
       });
       this.logger.log(`Super admin seeded: ${email}`);
     } catch (e) {

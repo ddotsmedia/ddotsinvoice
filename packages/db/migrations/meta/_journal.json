@@ -71,6 +71,55 @@
       "when": 1794312160000,
       "tag": "0009_invitations_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1795000000000,
+      "tag": "0010_suggestions",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1795100000000,
+      "tag": "0011_recurring",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1795200000000,
+      "tag": "0012_portal_token",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1795300000000,
+      "tag": "0013_portal_ack",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1795400000000,
+      "tag": "0014_subscription",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1795500000000,
+      "tag": "0015_team_invites",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1795600000000,
+      "tag": "0016_admin_role",
+      "breakpoints": true
     }
   ]
 }

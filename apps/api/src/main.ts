@@ -15,7 +15,7 @@ async function bootstrap(): Promise<void> {
   app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
   app.useGlobalInterceptors(new TenantContextInterceptor());
   app.enableCors({
-    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,https://ddotsinvoice.com').split(','),
+    origin: (process.env.CORS_ORIGINS ?? 'http://localhost:3000,https://ddinvoice.com,https://ddotsinvoice.com').split(','),
     credentials: true,
   });
 

@@ -2,6 +2,11 @@
 # Lives on the VPS at /opt/ddotsinvoice. Host nginx terminates TLS and proxies to the loopback ports below.
 # Host ports: web 4300, api 4301, super-admin 4302 (all bound to 127.0.0.1 only).
 # NOTE: 4100/4101 are taken by AyurConnect PM2 on this VPS.
+#
+# REQUIRED in .env (without DATABASE_ADMIN_URL all logins fail):
+#   DATABASE_URL=postgres://ddots_app:<password>@<host>/<db>       # RLS-enforced app role
+#   DATABASE_ADMIN_URL=postgres://ddots_admin:<password>@<host>/<db> # BYPASSRLS role for auth+admin
+# Run scripts/setup-db-roles.sh after migration 0016 to set role passwords.
 name: ddotsinvoice
 
 services:
