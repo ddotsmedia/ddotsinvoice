@@ -86,10 +86,20 @@ export default function ReportsOverviewPage() {
 
   const failed = [pl, invMonthly, revenue, summary].find((q) => q.error);
   if (failed?.error) {
+    const msg = errMsg(failed.error);
+    const isCompanyCtx = typeof msg === 'string' && msg.toLowerCase().includes('company context');
     return (
       <div className="rounded-xl bg-white p-6 text-sm shadow-md">
         <div className="font-semibold text-gray-900">{L('Reports could not be loaded', 'تعذر تحميل التقارير')}</div>
-        <div className="text-gray-500">{errMsg(failed.error)}</div>
+        <div className="text-gray-500">{msg}</div>
+        {isCompanyCtx && (
+          <p className="mt-3 text-xs text-gray-400">
+            {L(
+              'Your session may be outdated. Try signing out and back in to refresh your company access.',
+              'قد تكون جلستك قديمة. حاول تسجيل الخروج والدخول مجددًا لتحديث صلاحية الشركة.',
+            )}
+          </p>
+        )}
       </div>
     );
   }

@@ -50,9 +50,11 @@ export class PermissionsGuard implements CanActivate {
     }
 
     const actor = req.user;
-    // Tenant admins may act on any company of their own tenant via X-Company-Id (company switcher)
+    // Tenant admins may act on any company of their own tenant via X-Company-Id (company switcher).
+    // Also honour X-Company-Id for any user whose JWT has no companyId yet (e.g. just created their
+    // first company and the access token is stale — their localStorage already has the new company).
     const companyHeader = req.headers['x-company-id'];
-    if (actor.role === UserRole.TENANT_ADMIN && companyHeader) {
+    if (companyHeader && (actor.role === UserRole.TENANT_ADMIN || !actor.companyId)) {
       await this.assertCompanyInTenant(actor, companyHeader);
       req.activeCompanyId = companyHeader;
     }
