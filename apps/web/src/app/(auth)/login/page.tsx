@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -25,6 +25,10 @@ export default function LoginPage() {
   const { locale, setLocale } = useUi();
   const { login } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [invited, setInvited] = useState(false);
+  useEffect(() => {
+    setInvited(new URLSearchParams(window.location.search).get('invited') === '1');
+  }, []);
   const {
     register,
     handleSubmit,
@@ -112,6 +116,11 @@ export default function LoginPage() {
               </button>
             </div>
 
+            {invited && (
+              <div role="status" className="mb-5 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+                Your account is ready. Sign in with the password you just set.
+              </div>
+            )}
             <form onSubmit={onSubmit} className="space-y-5" noValidate>
               <Field label={t('email')} error={errors.email?.message}>
                 <input

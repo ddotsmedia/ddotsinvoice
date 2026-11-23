@@ -27,10 +27,15 @@ const GROUPS: Group[] = [
     key: 'invoicing', en: 'Invoicing', ar: 'الفواتير', icon: FileText,
     iconBg: 'bg-green-500/10', iconColor: 'text-green-400',
     items: [
-      { href: '/dashboard/invoicing/customers', en: 'Customers', ar: 'العملاء', icon: Users },
       { href: '/dashboard/invoicing/invoices?type=invoice', en: 'Invoices', ar: 'الفواتير', icon: FileText },
+      { href: '/dashboard/invoicing/invoices?type=quote', en: 'Quotes', ar: 'عروض الأسعار', icon: ScrollText },
       { href: '/dashboard/invoicing/invoices?type=credit_note', en: 'Credit Notes', ar: 'إشعارات الدائن', icon: FileMinus },
     ],
+  },
+  {
+    key: 'crm', en: 'CRM', ar: 'العملاء', icon: Users,
+    iconBg: 'bg-sky-500/10', iconColor: 'text-sky-400',
+    items: [{ href: '/dashboard/invoicing/customers', en: 'Customers', ar: 'العملاء', icon: Users }],
   },
   {
     key: 'purchasing', en: 'Purchasing', ar: 'المشتريات', icon: ShoppingCart,
@@ -99,10 +104,18 @@ const ADMIN_GROUP: Group = {
   key: 'admin', en: 'Admin', ar: 'الإدارة', icon: Shield,
   iconBg: 'bg-slate-500/10', iconColor: 'text-slate-400',
   items: [
-    { href: '/dashboard/admin/company', en: 'Company Settings', ar: 'إعدادات الشركة', icon: Building2 },
     { href: '/dashboard/admin/users', en: 'User Management', ar: 'إدارة المستخدمين', icon: Users },
     { href: '/dashboard/admin/roles', en: 'Roles & Permissions', ar: 'الأدوار والصلاحيات', icon: Shield },
     { href: '/dashboard/admin/audit-log', en: 'Audit Log', ar: 'سجل التدقيق', icon: ScrollText },
+  ],
+};
+
+const SETTINGS_GROUP: Group = {
+  key: 'settings', en: 'Settings', ar: 'الإعدادات', icon: Settings,
+  iconBg: 'bg-slate-500/10', iconColor: 'text-slate-400',
+  items: [
+    { href: '/dashboard/admin/company', en: 'Company Profile', ar: 'ملف الشركة', icon: Building2 },
+    { href: '/dashboard/settings/team', en: 'Team', ar: 'الفريق', icon: Users },
   ],
 };
 
@@ -111,10 +124,10 @@ export function Sidebar() {
   const pathname = usePathname();
   const { user, logout } = useAuth({ fetchUser: true });
   const [open, setOpen] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(GROUPS.map((g) => [g.key, g.items.some((i) => pathname.startsWith(i.href.split('?')[0]))])),
+    Object.fromEntries([...GROUPS, SETTINGS_GROUP, ADMIN_GROUP].map((g) => [g.key, g.items.some((i) => pathname.startsWith(i.href.split('?')[0]))])),
   );
   const isAdmin = user?.role === 'company_admin' || user?.role === 'tenant_admin';
-  const visibleGroups = isAdmin ? [...GROUPS, ADMIN_GROUP] : GROUPS;
+  const visibleGroups = isAdmin ? [...GROUPS, SETTINGS_GROUP, ADMIN_GROUP] : GROUPS;
   const initials = user ? `${user.firstName[0] ?? ''}${user.lastName[0] ?? ''}` : '';
 
   return (
@@ -207,17 +220,6 @@ export function Sidebar() {
         </div>
       </nav>
 
-      {isAdmin && (
-        <Link
-          href="/dashboard/admin/company"
-          className={`mx-3 mb-2 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
-            pathname.startsWith("/dashboard/admin/company") ? "bg-sidebar-active text-white" : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
-          }`}
-        >
-          <Settings className="h-4 w-4" />
-          {L("Settings", "الإعدادات")}
-        </Link>
-      )}
       {/* User footer */}
       <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 hover:bg-white/5 transition-colors">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow">

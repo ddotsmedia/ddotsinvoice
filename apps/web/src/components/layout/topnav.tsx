@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { Bell, ChevronRight, LogOut, Menu, Moon, Plus, Search, Sun } from 'lucide-react';
+import { ChevronRight, LogOut, Menu, Moon, Plus, Search, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -12,6 +12,7 @@ import { useAuth, type AuthUser } from '@/lib/auth';
 import { useUi } from '@/app/providers';
 import { useLabel } from '@/lib/ui-helpers';
 import { CreateCompanyModal } from '@/components/create-company-modal';
+import { NotificationBell } from './notification-bell';
 
 const iconBtn = 'inline-flex h-9 w-9 items-center justify-center rounded-lg text-secondary hover:bg-surface-3 hover:text-primary';
 
@@ -111,10 +112,7 @@ export function TopNav({ onMenu }: { onMenu: () => void }) {
       <div className="ms-auto flex items-center gap-1">
         <CompanySelector user={user} />
         <button type="button" aria-label="Search" className={iconBtn}><Search className="h-4 w-4" /></button>
-        <button type="button" aria-label="Notifications" className={`${iconBtn} relative`}>
-          <Bell className="h-4 w-4" />
-          <span className="absolute right-1.5 top-1.5 h-1.5 w-1.5 rounded-full bg-red-500" />
-        </button>
+        <NotificationBell enabled={!!user && !!user.tenantId} />
         <button type="button" aria-label={t('nav.theme')} className={iconBtn} onClick={toggleTheme}>
           {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
         </button>
