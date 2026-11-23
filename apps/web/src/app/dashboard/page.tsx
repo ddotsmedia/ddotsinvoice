@@ -15,6 +15,8 @@ import { CashRunwayCard } from './components/CashRunwayCard';
 import { TrendChart, type Period, type TrendPoint } from './components/TrendChart';
 import { AiInsights, type Insight } from './components/AiInsights';
 import { QuickActions, type QuickAction } from './components/QuickActions';
+import { RecentInvoices } from './components/RecentInvoices';
+import { OverdueBanner } from './components/OverdueBanner';
 import './dashboard.css';
 
 interface DashboardKpis {
@@ -22,34 +24,56 @@ interface DashboardKpis {
   payables: { amount: string; count: number };
   cashPosition: { amount: string };
   netVat: { amount: string; from: string; to: string };
+  recentInvoices: Array<{ id: string; invoiceNumber: string; customerName: string; total: string; status: string; dueDate: string }>;
+  netProfitLast30: { amount: string };
+  cashRunway: { weeks: number; accounts: Array<{ label: string; amount: string }> };
+  overdueInvoices: { count: number; totalAmount: string };
+  upcomingDue: { count: number; totalAmount: string };
+  trendMonthly: Array<{ month: string; revenue: string; expenses: string }>;
 }
 
 // Display-only formatting; amounts stay decimal strings (Intl formats them exactly)
 const aedFmt = new Intl.NumberFormat('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 const aed = (v: string) => `AED ${aedFmt.format(v as never)}`;
 
-// ── Mock data (trend chart, hero card and AI insights are not live yet) ───
-const TREND: Record<Period, TrendPoint[]> = {
-  '1D': ['9AM', '10', '11', '12PM', '1', '2', '3', '4', '5'].map((label, i) => ({ label, value: [1200, 1800, 1400, 2100, 1900, 2400, 2200, 2600, 2800][i] })),
-  '1W': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, i) => ({ label, value: [5200, 7800, 6400, 9100, 8200, 7600, 10200][i] })),
-  '1M': ['03/11', '05', '07', '09', '11', '13', '15', '17', '19', '21', '23', '25', '27', '29', '01/12', '03'].map((label, i) => ({
-    label,
-    value: [1200, 15800, 9400, 11100, 10200, 12800, 8600, 13400, 9100, 11200, 7800, 12600, -1200, 10400, 11800, 9200][i],
-  })),
-  '1Y': ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'].map((label, i) => ({
-    label,
-    value: [32000, 28000, 45000, 39000, 52000, 48000, 61000, 57000, 43000, 69000, 74000, 79273][i],
-  })),
-  All: ['2022', '2023', 'Q1 24', 'Q2 24', 'Q3 24', 'Q4 24'].map((label, i) => ({ label, value: [120000, 185000, 45000, 52000, 61000, 79273][i] })),
-};
+// Build trend series from real API data
+function buildTrendSeries(trendMonthly: Array<{ month: string; revenue: string; expenses: string }>): Record<Period, TrendPoint[]> {
+  const livePoints: TrendPoint[] = trendMonthly.map((m) => ({
+    label: m.month,
+    value: parseFloat(m.revenue) - parseFloat(m.expenses),
+  }));
+  // Placeholder periods — only '1M' (last 6 months) is real
+  return {
+    '1D': livePoints,
+    '1W': livePoints,
+    '1M': livePoints,
+    '1Y': livePoints,
+    All: livePoints,
+  };
+}
 
-const INSIGHTS: Insight[] = [
-  { category: 'collections', title: 'Escalate collection for DAMAC Properties', description: 'AED 82,399 is over 90 days overdue. Send formal demand letter or consider legal action.' },
-  { category: 'collections', title: 'Call DAMAC Properties', description: 'AED 92,206 overdue for 172 days. Escalate to management — consider external collection.' },
-  { category: 'vat', title: 'VAT return filing due in 12 days', description: 'Q3 2024-25 VAT return must be filed by Dec 28. Net payable estimated at AED 5,596.' },
-  { category: 'cashflow', title: 'Strong cash position — consider short-term investment', description: 'AED 624K idle cash on hand could earn 4–5% in a UAE T-bill or term deposit.' },
-  { category: 'receivables', title: '3 invoices approaching 60-day mark', description: 'Send payment reminders to Al Futtaim, Emaar, and Majid Al Futtaim before they go overdue.' },
-];
+// Build AI insights from real KPI data
+function buildInsights(k: DashboardKpis): Insight[] {
+  const aedFmtInsight = new Intl.NumberFormat('en-AE', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+  const fmt = (v: string) => `AED ${aedFmtInsight.format(parseFloat(v))}`;
+  const insights: Insight[] = [];
+  if (k.overdueInvoices.count > 0) {
+    insights.push({ category: 'collections', title: `${k.overdueInvoices.count} invoice${k.overdueInvoices.count === 1 ? '' : 's'} overdue — send payment reminders`, description: `${fmt(k.overdueInvoices.totalAmount)} outstanding across ${k.overdueInvoices.count} overdue invoice${k.overdueInvoices.count === 1 ? '' : 's'}. Send formal payment reminders or consider escalation.` });
+  }
+  if (k.upcomingDue.count > 0) {
+    insights.push({ category: 'receivables', title: `${k.upcomingDue.count} invoice${k.upcomingDue.count === 1 ? '' : 's'} due in 14 days`, description: `${fmt(k.upcomingDue.totalAmount)} due soon across ${k.upcomingDue.count} invoice${k.upcomingDue.count === 1 ? '' : 's'}. Send proactive payment reminders now.` });
+  }
+  const vatNum = parseFloat(k.netVat.amount);
+  if (vatNum !== 0) {
+    insights.push({ category: 'vat', title: vatNum > 0 ? 'VAT payable this quarter' : 'VAT credit this quarter', description: `Net VAT ${vatNum > 0 ? 'payable' : 'credit'}: ${fmt(k.netVat.amount)} for period ${k.netVat.from} to ${k.netVat.to}.` });
+  }
+  if (k.cashRunway.weeks < 12) {
+    insights.push({ category: 'cashflow', title: `Low cash runway — ${k.cashRunway.weeks} week${k.cashRunway.weeks === 1 ? '' : 's'} remaining`, description: 'Cash reserves are running low. Review upcoming expenses and accelerate receivables collection.' });
+  } else {
+    insights.push({ category: 'cashflow', title: `Cash position healthy — ${fmt(k.cashPosition.amount)} across ${k.cashRunway.accounts.length} account${k.cashRunway.accounts.length === 1 ? '' : 's'}`, description: `Current runway: ${k.cashRunway.weeks} weeks. Consider short-term investments for idle cash.` });
+  }
+  return insights;
+}
 
 const ACTIONS: QuickAction[] = [
   { href: '/dashboard/invoicing/invoices/new', label: 'Create Invoice', description: 'Generate a new sales invoice', icon: FileText, bg: '#EEF2FF', color: '#4F46E5' },
@@ -146,33 +170,49 @@ export default function DashboardPage() {
               ))}
         </div>
 
+        {k && k.overdueInvoices.count > 0 && (
+          <OverdueBanner count={k.overdueInvoices.count} totalAmount={k.overdueInvoices.totalAmount} />
+        )}
+
         <div className="dash-main-grid">
           <HeroCard
             eyebrow="Net Profit · Last 30 Days"
-            status="Healthy"
-            amount="AED 79,273"
-            change={3815.9}
-            changeLabel="+3,815.9% vs previous month"
+            status={k ? (parseFloat(k.netProfitLast30.amount) >= 0 ? 'Profitable' : 'Loss') : 'Loading…'}
+            amount={k ? aed(k.netProfitLast30.amount) : '—'}
+            change={undefined}
+            changeLabel="vs previous 30 days"
           />
           <CashRunwayCard
-            weeks={288}
-            description="Excellent runway · over 1 year of cash reserves"
-            accounts={[
-              { label: 'Corporate Account', value: 'AED 500,000' },
-              { label: 'Cash on Hand', value: 'AED 624,250' },
-            ]}
+            weeks={k?.cashRunway.weeks ?? 0}
+            description={k ? (k.cashRunway.weeks >= 52 ? 'Excellent runway · over 1 year of cash reserves' : k.cashRunway.weeks >= 12 ? 'Adequate runway' : 'Low runway — monitor cash closely') : 'Loading…'}
+            accounts={(k?.cashRunway.accounts ?? []).map((a) => ({ label: a.label, value: aed(a.amount) }))}
           />
           <div className="dash-trend">
-            <TrendChart series={TREND} initial="1M" />
+            {k?.trendMonthly ? (
+              <TrendChart series={buildTrendSeries(k.trendMonthly)} initial="1M" />
+            ) : (
+              <div className="dash-card flex h-full animate-pulse items-center justify-center text-sm text-[var(--dash-fg3)]">Loading…</div>
+            )}
           </div>
         </div>
 
-        <p className="-mt-2 text-xs text-[var(--dash-fg3)]">Net profit, cash runway, trend chart and AI insights show sample data — live data coming soon.</p>
+        {k && k.upcomingDue.count > 0 && (
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+            <span className="text-amber-600 text-sm font-semibold">
+              {k.upcomingDue.count} invoice{k.upcomingDue.count === 1 ? '' : 's'} due in 14 days · {aed(k.upcomingDue.totalAmount)}
+            </span>
+            <a href="/dashboard/invoicing/invoices?due_soon=1" className="ml-auto text-xs font-medium text-amber-700 hover:text-amber-800">
+              Send Reminders →
+            </a>
+          </div>
+        )}
 
         <div className="dash-bottom-row">
-          <AiInsights items={INSIGHTS} />
+          <AiInsights items={k ? buildInsights(k) : []} />
           <QuickActions actions={ACTIONS} />
         </div>
+
+        <RecentInvoices invoices={k?.recentInvoices ?? []} />
       </div>
     </div>
   );
