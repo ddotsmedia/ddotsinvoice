@@ -141,7 +141,7 @@ export function Sidebar() {
   return (
     <div className="flex h-full flex-col bg-sidebar-bg text-sidebar-text">
       {/* Logo */}
-      <div className="px-5 pb-4 pt-5">
+      <div className="px-5 pb-3 pt-5">
         <div className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-500 shadow-lg shadow-brand-500/30">
             <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
@@ -154,6 +154,16 @@ export function Sidebar() {
           </div>
         </div>
       </div>
+
+      {/* Suggest a feature — prominent pill below logo */}
+      <a
+        href="/suggest"
+        className="mx-3 mb-3 flex items-center gap-2 rounded-xl bg-gradient-to-r from-indigo-500 to-purple-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-[1.02] transition-all duration-200"
+      >
+        <span className="text-base">💡</span>
+        <span>Suggest a Feature</span>
+        <span className="ml-auto text-indigo-200">→</span>
+      </a>
 
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4" aria-label="Main">
         {/* Dashboard */}
@@ -227,17 +237,6 @@ export function Sidebar() {
           })}
         </div>
       </nav>
-
-      {/* Suggest feature link */}
-      <div className="mx-3 mb-1 text-center">
-        <a
-          href="/suggest"
-          target="_blank"
-          className="text-[10px] text-slate-400 hover:text-[#3B5BDB] transition-colors"
-        >
-          Suggest a feature →
-        </a>
-      </div>
 
       {/* User footer */}
       <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 hover:bg-white/5 transition-colors">

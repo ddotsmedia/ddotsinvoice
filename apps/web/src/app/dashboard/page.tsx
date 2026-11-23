@@ -129,10 +129,10 @@ export default function DashboardPage() {
   });
   const k = kpisQ.data;
   const kpiCards = k && [
-    { label: 'Receivables', amount: aed(k.receivables.amount), sub: `${k.receivables.count} open invoice${k.receivables.count === 1 ? '' : 's'}`, showSparkline: true },
-    { label: 'Payables', amount: aed(k.payables.amount), sub: `${k.payables.count} open bill${k.payables.count === 1 ? '' : 's'}`, showSparkline: false },
-    { label: 'Cash Position', amount: aed(k.cashPosition.amount), sub: 'Bank + Cash', showSparkline: false },
-    { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}`, showSparkline: false },
+    { label: 'Receivables', amount: aed(k.receivables.amount), sub: `${k.receivables.count} open invoice${k.receivables.count === 1 ? '' : 's'}`, showSparkline: true, iconGrad: 'from-blue-400 to-blue-600', icon: '📥' },
+    { label: 'Payables', amount: aed(k.payables.amount), sub: `${k.payables.count} open bill${k.payables.count === 1 ? '' : 's'}`, showSparkline: false, iconGrad: 'from-orange-400 to-orange-600', icon: '📤' },
+    { label: 'Cash Position', amount: aed(k.cashPosition.amount), sub: 'Bank + Cash', showSparkline: false, iconGrad: 'from-emerald-400 to-emerald-600', icon: '🏦' },
+    { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}`, showSparkline: false, iconGrad: 'from-purple-400 to-purple-600', icon: '📊' },
   ];
 
   if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
@@ -201,17 +201,33 @@ export default function DashboardPage() {
       )}
 
       <div className="mx-auto flex max-w-7xl flex-col gap-5">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-extrabold text-[var(--dash-fg)]">
-              {getGreeting()}, {user.firstName} 👋
-            </h1>
-            <p className="mt-0.5 text-sm text-[var(--dash-fg2)]">
-              <span className="text-[var(--dash-fg3)]">
-                {k ? 'Live figures' : kpisQ.isError ? 'Could not load live figures' : 'Loading live figures…'}
-              </span>
-            </p>
+        {/* Hero Banner */}
+        <div className="relative overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-500 p-6 text-white shadow-2xl">
+          <div className="relative flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-indigo-200 uppercase tracking-widest">
+                {new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' })}
+              </p>
+              <h1 className="mt-1 text-3xl font-bold">{getGreeting()}, {user.firstName} 👋</h1>
+              <p className="mt-1 text-indigo-200 text-sm">
+                {k ? 'Your business at a glance · Live figures' : kpisQ.isError ? 'Could not load live figures' : 'Loading live figures…'}
+              </p>
+            </div>
+            <div className="hidden md:flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCustomizeOpen(true)}
+                className="flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-4 py-2 text-sm font-medium backdrop-blur-sm transition-all"
+              >
+                <Settings2 size={14} /> Customize
+              </button>
+            </div>
           </div>
+          <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-white/10 pointer-events-none" />
+          <div className="absolute -right-4 -bottom-12 h-56 w-56 rounded-full bg-white/5 pointer-events-none" />
+        </div>
+        {/* Mobile customize button */}
+        <div className="flex md:hidden justify-end">
           <button
             type="button"
             onClick={() => setCustomizeOpen(true)}
@@ -263,24 +279,30 @@ export default function DashboardPage() {
         <div className="dash-kpi-row">
           {kpiCards
             ? kpiCards.map((c) => (
-                <div key={c.label} className="dash-card flex flex-col gap-1.5">
+                <div key={c.label} className="dash-card flex flex-col gap-2 hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between">
-                    <span className="text-xs font-semibold text-[var(--dash-fg2)]">{c.label}</span>
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${c.iconGrad} text-lg shadow-sm`}>
+                      {c.icon}
+                    </div>
                     {c.showSparkline && sparklineData.length > 0 && (
-                      <ResponsiveContainer width={60} height={24}>
+                      <ResponsiveContainer width={60} height={28}>
                         <LineChart data={sparklineData}>
                           <Line dataKey="revenue" dot={false} stroke="#6366f1" strokeWidth={1.5} />
                         </LineChart>
                       </ResponsiveContainer>
                     )}
                   </div>
-                  <div className="dash-kpi-amount">{c.amount}</div>
-                  <span className="dash-sub">{c.sub}</span>
+                  <div className="mt-1">
+                    <span className="text-xs font-semibold text-[var(--dash-fg3)] uppercase tracking-wide">{c.label}</span>
+                    <div className="dash-kpi-amount mt-0.5">{c.amount}</div>
+                    <span className="dash-sub">{c.sub}</span>
+                  </div>
                 </div>
               ))
             : ['Receivables', 'Payables', 'Cash Position', 'Net VAT'].map((l) => (
                 <div key={l} className="dash-card flex animate-pulse flex-col gap-2" aria-busy="true">
-                  <div className="h-3 w-20 rounded bg-gray-200" />
+                  <div className="h-10 w-10 rounded-xl bg-gray-200" />
+                  <div className="h-3 w-20 rounded bg-gray-200 mt-1" />
                   <div className="h-7 w-32 rounded bg-gray-200" />
                   <div className="h-3 w-24 rounded bg-gray-200" />
                 </div>

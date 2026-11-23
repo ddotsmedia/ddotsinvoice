@@ -7,14 +7,15 @@ import Link from 'next/link';
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? (typeof window !== 'undefined' ? window.location.origin + '/api' : 'http://localhost:3001');
 
 const CATEGORIES = ['Feature Request', 'Bug Report', 'UI/UX Improvement', 'Performance', 'Integration', 'Other'];
-const PRIORITIES = ['low', 'medium', 'high'] as const;
+const PRIORITIES = ['low', 'medium', 'high', 'critical'] as const;
 type Priority = typeof PRIORITIES[number];
 
-const priorityLabel: Record<Priority, string> = { low: 'Low', medium: 'Medium', high: 'High' };
+const priorityLabel: Record<Priority, string> = { low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' };
 const priorityColor: Record<Priority, string> = {
   low: 'border-emerald-400 bg-emerald-50 text-emerald-700 shadow-sm',
   medium: 'border-amber-400 bg-amber-50 text-amber-700 shadow-sm',
   high: 'border-red-400 bg-red-50 text-red-700 shadow-sm',
+  critical: 'border-purple-500 bg-purple-50 text-purple-700 shadow-sm',
 };
 
 export default function SuggestPage() {
@@ -256,7 +257,7 @@ export default function SuggestPage() {
                         required
                         minLength={20}
                         maxLength={1000}
-                        rows={4}
+                        rows={3}
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                         placeholder="Describe your suggestion in detail…"
