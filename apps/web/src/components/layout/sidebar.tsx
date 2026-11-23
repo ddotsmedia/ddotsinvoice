@@ -238,6 +238,12 @@ export function Sidebar() {
           <LogOut className="h-4 w-4" />
         </button>
       </div>
+
+      {/* Attribution */}
+      <div className="mt-auto border-t border-white/10 px-4 py-3">
+        <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500">Built and managed by</p>
+        <p className="text-[11px] font-medium text-slate-400 dark:text-slate-400">Ddotsmedia Technologies LLC</p>
+      </div>
     </div>
   );
 }
