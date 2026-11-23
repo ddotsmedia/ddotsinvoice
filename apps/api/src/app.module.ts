@@ -20,6 +20,7 @@ import { PurchasingModule } from './purchasing/purchasing.module';
 import { PaymentsModule } from './payments/payments.module';
 import { HrModule } from './hr/hr.module';
 import { ReportsModule } from './reports/reports.module';
+import { DashboardModule } from './modules/dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { ReportsModule } from './reports/reports.module';
     PaymentsModule,
     HrModule,
     ReportsModule,
+    DashboardModule,
     SuperAdminModule,
     AdminModule,
   ],
