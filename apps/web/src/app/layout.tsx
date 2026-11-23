@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 import type { ReactNode } from 'react';
-import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from './providers';
-
-const inter = Inter({ subsets: ['latin'], variable: '--font-inter', display: 'swap' });
 
 export const metadata: Metadata = {
   title: 'DdotsInvoice — VAT-Compliant Invoicing & Finance for UAE Businesses',
@@ -16,7 +13,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ar" dir="rtl" suppressHydrationWarning className={inter.variable}>
+    <html lang="ar" dir="rtl" suppressHydrationWarning>
       <body className="antialiased">
         <Providers>{children}</Providers>
       </body>
