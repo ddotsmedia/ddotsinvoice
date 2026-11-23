@@ -1,13 +1,10 @@
-import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards, Inject } from '@nestjs/common';
+import { Body, Controller, Get, HttpCode, Post, Req, Res, UnauthorizedException, UseGuards } from '@nestjs/common';
 import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import type { FastifyReply, FastifyRequest } from 'fastify';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
 import { AuthService, hashToken } from './auth.service';
 import { LoginDto, RegisterTenantDto } from './auth.dto';
-import { sql } from 'drizzle-orm';
-import { ADMIN_DB } from '../../infra/drizzle.module';
-import { Db } from '@ddotsinvoice/db';
 import { InvitationsService } from '../invitations/invitations.service';
 import { AcceptInviteDto } from '../invitations/invitations.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -30,7 +27,6 @@ export class AuthController {
   constructor(
     private readonly auth: AuthService,
     private readonly invitations: InvitationsService,
-    @Inject(ADMIN_DB) private readonly db: Db,
   ) {}
 
   @Post('register-tenant')
@@ -94,26 +90,6 @@ export class AuthController {
   @SkipThrottle({ 'auth-login': true, 'auth-register': true })
   me(@CurrentUser() actor: AccessTokenPayload) {
     return this.auth.me(actor.sub);
-  }
-
-  /** Temporary debug endpoint — remove after confirming login works */
-  @Get('debug')
-  @SkipThrottle({ 'auth-login': true, 'auth-register': true })
-  async debug() {
-    try {
-      const result = await this.db.execute(sql`
-        SELECT
-          COUNT(*) AS total_users,
-          COUNT(*) FILTER (WHERE tenant_id IS NULL) AS platform_admins,
-          COUNT(*) FILTER (WHERE email = 'admin@ddotsmedia.com') AS admin_exists,
-          COUNT(*) FILTER (WHERE email = 'admin@ddotsmedia.com' AND is_active = true) AS admin_active
-        FROM users
-      `);
-      const rows = Array.isArray(result) ? result : (result as { rows?: unknown[] }).rows ?? [];
-      return { dbConnected: true, stats: rows[0] ?? null };
-    } catch (e: unknown) {
-      return { dbConnected: false, error: e instanceof Error ? e.message : String(e) };
-    }
   }
 
   /** One-time: attach a tenant to a user who was created without one */
