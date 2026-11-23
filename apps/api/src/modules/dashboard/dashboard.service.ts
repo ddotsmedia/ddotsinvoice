@@ -25,7 +25,7 @@ const quarterRange = (today: string): { from: string; to: string } => {
 export class DashboardService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
-  kpis(actor: AccessTokenPayload) {
+  kpis(actor: AccessTokenPayload, fromDate?: string, toDate?: string) {
     const tenantId = requireTenant(actor.tenantId);
     const companyId = requireCompany(actor.companyId);
     const range = quarterRange(todayIso());
@@ -89,16 +89,19 @@ export class DashboardService {
       const today = todayIso();
       const d30ago = new Date(Date.now() - 30 * 86400000).toISOString().slice(0, 10);
       const d14ahead = new Date(Date.now() + 14 * 86400000).toISOString().slice(0, 10);
+      // Use custom date range if provided, otherwise default to last 30 days
+      const rangeFrom = fromDate ?? d30ago;
+      const rangeTo = toDate ?? today;
 
-      // Net profit last 30 days (invoices revenue - supplier invoices expenses)
+      // Net profit for date range (invoices revenue - supplier invoices expenses)
       const [rev30] = await tx
         .select({ total: sql<string>`coalesce(sum(${invoices.total}),0)` })
         .from(invoices)
-        .where(and(eq(invoices.companyId, companyId), eq(invoices.type, 'invoice'), inArray(invoices.status, ['posted', 'partially_paid', 'paid']), gte(invoices.date, d30ago), lte(invoices.date, today)));
+        .where(and(eq(invoices.companyId, companyId), eq(invoices.type, 'invoice'), inArray(invoices.status, ['posted', 'partially_paid', 'paid']), gte(invoices.date, rangeFrom), lte(invoices.date, rangeTo)));
       const [exp30] = await tx
         .select({ total: sql<string>`coalesce(sum(${supplierInvoices.total}),0)` })
         .from(supplierInvoices)
-        .where(and(eq(supplierInvoices.companyId, companyId), inArray(supplierInvoices.status, ['posted', 'partially_paid', 'fully_paid']), gte(supplierInvoices.date, d30ago), lte(supplierInvoices.date, today)));
+        .where(and(eq(supplierInvoices.companyId, companyId), inArray(supplierInvoices.status, ['posted', 'partially_paid', 'fully_paid']), gte(supplierInvoices.date, rangeFrom), lte(supplierInvoices.date, rangeTo)));
       const netProfit30 = M.sub(M.money(rev30?.total ?? '0'), M.money(exp30?.total ?? '0'));
 
       // Cash runway: bank balances + avg monthly expenses

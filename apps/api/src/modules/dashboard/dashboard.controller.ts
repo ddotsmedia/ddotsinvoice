@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { AccessTokenPayload, rolesAtOrAbove, UserRole } from '@ddotsinvoice/shared';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
@@ -16,7 +16,11 @@ export class DashboardController {
   constructor(private readonly dashboard: DashboardService) {}
 
   @Get('kpis')
-  kpis(@CurrentUser() actor: AccessTokenPayload) {
-    return this.dashboard.kpis(actor);
+  kpis(
+    @CurrentUser() actor: AccessTokenPayload,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    return this.dashboard.kpis(actor, from, to);
   }
 }

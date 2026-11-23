@@ -1,15 +1,15 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { BarChart3, BookOpen, Building2, CreditCard, FileText, Plus, Receipt } from 'lucide-react';
+import { BarChart3, BookOpen, Building2, CreditCard, FileText, Plus, Receipt, Settings2, X } from 'lucide-react';
+import { ResponsiveContainer, LineChart, Line } from 'recharts';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
 import { useLabel } from '@/lib/ui-helpers';
 import { CreateCompanyModal } from '@/components/create-company-modal';
 import { ClaimTenantBanner } from '@/components/claim-tenant-modal';
-import { KpiCard } from './components/KpiCard';
 import { HeroCard } from './components/HeroCard';
 import { CashRunwayCard } from './components/CashRunwayCard';
 import { TrendChart, type Period, type TrendPoint } from './components/TrendChart';
@@ -90,23 +90,49 @@ function getGreeting() {
   return 'Good Evening';
 }
 
+interface WidgetVisibility { trend: boolean; insights: boolean; recent: boolean; cashRunway: boolean }
+const DEFAULT_WIDGETS: WidgetVisibility = { trend: true, insights: true, recent: true, cashRunway: true };
+
+const readWidgets = (): WidgetVisibility => {
+  try { return { ...DEFAULT_WIDGETS, ...JSON.parse(localStorage.getItem('dashboardWidgets') ?? '{}') }; } catch { return DEFAULT_WIDGETS; }
+};
+const writeWidgets = (v: WidgetVisibility) => { try { localStorage.setItem('dashboardWidgets', JSON.stringify(v)); } catch {} };
+
 export default function DashboardPage() {
   const L = useLabel();
   const { user } = useAuth({ fetchUser: true });
   const companyId = useActiveCompanyId(user);
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [appliedFrom, setAppliedFrom] = useState('');
+  const [appliedTo, setAppliedTo] = useState('');
+  const [widgets, setWidgets] = useState<WidgetVisibility>(DEFAULT_WIDGETS);
+  const [customizeOpen, setCustomizeOpen] = useState(false);
+
+  useEffect(() => { setWidgets(readWidgets()); }, []);
+
+  const toggleWidget = (key: keyof WidgetVisibility) => {
+    setWidgets((prev) => { const next = { ...prev, [key]: !prev[key] }; writeWidgets(next); return next; });
+  };
+
   const kpisQ = useQuery({
-    queryKey: ['dashboard-kpis', companyId],
-    queryFn: async () => (await api.get<DashboardKpis>('/dashboard/kpis')).data,
+    queryKey: ['dashboard-kpis', companyId, appliedFrom, appliedTo],
+    queryFn: async () => {
+      const params: Record<string, string> = {};
+      if (appliedFrom) params.from = appliedFrom;
+      if (appliedTo) params.to = appliedTo;
+      return (await api.get<DashboardKpis>('/dashboard/kpis', { params })).data;
+    },
     enabled: !!companyId,
   });
   const k = kpisQ.data;
   const kpiCards = k && [
-    { label: 'Receivables', amount: aed(k.receivables.amount), sub: `${k.receivables.count} open invoice${k.receivables.count === 1 ? '' : 's'}` },
-    { label: 'Payables', amount: aed(k.payables.amount), sub: `${k.payables.count} open bill${k.payables.count === 1 ? '' : 's'}` },
-    { label: 'Cash Position', amount: aed(k.cashPosition.amount), sub: 'Bank + Cash' },
-    { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}` },
+    { label: 'Receivables', amount: aed(k.receivables.amount), sub: `${k.receivables.count} open invoice${k.receivables.count === 1 ? '' : 's'}`, showSparkline: true },
+    { label: 'Payables', amount: aed(k.payables.amount), sub: `${k.payables.count} open bill${k.payables.count === 1 ? '' : 's'}`, showSparkline: false },
+    { label: 'Cash Position', amount: aed(k.cashPosition.amount), sub: 'Bank + Cash', showSparkline: false },
+    { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}`, showSparkline: false },
   ];
 
   if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
@@ -144,23 +170,114 @@ export default function DashboardPage() {
     );
   }
 
+  const sparklineData = k?.trendMonthly ?? [];
+
   return (
     <div className="dash-root -m-4 min-h-screen bg-[var(--dash-bg)] p-4 md:-m-6 md:p-6">
+      {/* Widget customize modal */}
+      {customizeOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={() => setCustomizeOpen(false)}>
+          <div className="w-80 rounded-2xl bg-white p-6 shadow-xl dark:bg-slate-900" onClick={(e) => e.stopPropagation()}>
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-base font-semibold text-[var(--dash-fg)]">Customize Dashboard</h2>
+              <button type="button" onClick={() => setCustomizeOpen(false)} className="rounded-lg p-1 hover:bg-gray-100 dark:hover:bg-slate-800"><X className="h-4 w-4" /></button>
+            </div>
+            <div className="flex flex-col gap-3">
+              {([
+                { key: 'trend' as const, label: 'Net Profit Trend' },
+                { key: 'insights' as const, label: 'AI Insights' },
+                { key: 'recent' as const, label: 'Recent Invoices' },
+                { key: 'cashRunway' as const, label: 'Cash Runway' },
+              ]).map(({ key, label }) => (
+                <label key={key} className="flex cursor-pointer items-center gap-3 text-sm text-[var(--dash-fg2)]">
+                  <input type="checkbox" checked={widgets[key]} onChange={() => toggleWidget(key)} className="h-4 w-4 rounded accent-indigo-500" />
+                  {label}
+                </label>
+              ))}
+            </div>
+            <button type="button" onClick={() => setCustomizeOpen(false)} className="mt-5 w-full rounded-lg bg-indigo-600 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Done</button>
+          </div>
+        </div>
+      )}
+
       <div className="mx-auto flex max-w-7xl flex-col gap-5">
-        <div>
-          <h1 className="text-2xl font-extrabold text-[var(--dash-fg)]">
-            {getGreeting()}, {user.firstName} 👋
-          </h1>
-          <p className="mt-0.5 text-sm text-[var(--dash-fg2)]">
-            <span className="text-[var(--dash-fg3)]">
-              {k ? 'Live figures' : kpisQ.isError ? 'Could not load live figures' : 'Loading live figures…'}
-            </span>
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-extrabold text-[var(--dash-fg)]">
+              {getGreeting()}, {user.firstName} 👋
+            </h1>
+            <p className="mt-0.5 text-sm text-[var(--dash-fg2)]">
+              <span className="text-[var(--dash-fg3)]">
+                {k ? 'Live figures' : kpisQ.isError ? 'Could not load live figures' : 'Loading live figures…'}
+              </span>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setCustomizeOpen(true)}
+            className="inline-flex shrink-0 items-center gap-1.5 rounded-lg border border-border bg-white px-3 py-2 text-xs font-medium text-secondary hover:bg-surface-2 dark:bg-slate-800"
+          >
+            <Settings2 className="h-3.5 w-3.5" />
+            Customize
+          </button>
+        </div>
+
+        {/* Date range picker */}
+        <div className="flex flex-wrap items-end gap-3">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-[var(--dash-fg3)]">From</label>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-[var(--dash-fg)] dark:bg-slate-800"
+            />
+          </div>
+          <div className="flex flex-col gap-1">
+            <label className="text-xs font-medium text-[var(--dash-fg3)]">To</label>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="rounded-lg border border-border bg-white px-3 py-1.5 text-sm text-[var(--dash-fg)] dark:bg-slate-800"
+            />
+          </div>
+          <button
+            type="button"
+            onClick={() => { setAppliedFrom(dateFrom); setAppliedTo(dateTo); }}
+            className="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+          >
+            Apply
+          </button>
+          {(appliedFrom || appliedTo) && (
+            <button
+              type="button"
+              onClick={() => { setDateFrom(''); setDateTo(''); setAppliedFrom(''); setAppliedTo(''); }}
+              className="text-xs text-secondary hover:text-primary"
+            >
+              Clear
+            </button>
+          )}
         </div>
 
         <div className="dash-kpi-row">
           {kpiCards
-            ? kpiCards.map((c) => <KpiCard key={c.label} label={c.label} amount={c.amount} sub={c.sub} />)
+            ? kpiCards.map((c) => (
+                <div key={c.label} className="dash-card flex flex-col gap-1.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold text-[var(--dash-fg2)]">{c.label}</span>
+                    {c.showSparkline && sparklineData.length > 0 && (
+                      <ResponsiveContainer width={60} height={24}>
+                        <LineChart data={sparklineData}>
+                          <Line dataKey="revenue" dot={false} stroke="#6366f1" strokeWidth={1.5} />
+                        </LineChart>
+                      </ResponsiveContainer>
+                    )}
+                  </div>
+                  <div className="dash-kpi-amount">{c.amount}</div>
+                  <span className="dash-sub">{c.sub}</span>
+                </div>
+              ))
             : ['Receivables', 'Payables', 'Cash Position', 'Net VAT'].map((l) => (
                 <div key={l} className="dash-card flex animate-pulse flex-col gap-2" aria-busy="true">
                   <div className="h-3 w-20 rounded bg-gray-200" />
@@ -176,24 +293,28 @@ export default function DashboardPage() {
 
         <div className="dash-main-grid">
           <HeroCard
-            eyebrow="Net Profit · Last 30 Days"
+            eyebrow={`Net Profit${appliedFrom ? ` · ${appliedFrom} to ${appliedTo || 'today'}` : ' · Last 30 Days'}`}
             status={k ? (parseFloat(k.netProfitLast30.amount) >= 0 ? 'Profitable' : 'Loss') : 'Loading…'}
             amount={k ? aed(k.netProfitLast30.amount) : '—'}
             change={undefined}
-            changeLabel="vs previous 30 days"
+            changeLabel="vs previous period"
           />
-          <CashRunwayCard
-            weeks={k?.cashRunway.weeks ?? 0}
-            description={k ? (k.cashRunway.weeks >= 52 ? 'Excellent runway · over 1 year of cash reserves' : k.cashRunway.weeks >= 12 ? 'Adequate runway' : 'Low runway — monitor cash closely') : 'Loading…'}
-            accounts={(k?.cashRunway.accounts ?? []).map((a) => ({ label: a.label, value: aed(a.amount) }))}
-          />
-          <div className="dash-trend">
-            {k?.trendMonthly ? (
-              <TrendChart series={buildTrendSeries(k.trendMonthly)} initial="1M" />
-            ) : (
-              <div className="dash-card flex h-full animate-pulse items-center justify-center text-sm text-[var(--dash-fg3)]">Loading…</div>
-            )}
-          </div>
+          {widgets.cashRunway && (
+            <CashRunwayCard
+              weeks={k?.cashRunway.weeks ?? 0}
+              description={k ? (k.cashRunway.weeks >= 52 ? 'Excellent runway · over 1 year of cash reserves' : k.cashRunway.weeks >= 12 ? 'Adequate runway' : 'Low runway — monitor cash closely') : 'Loading…'}
+              accounts={(k?.cashRunway.accounts ?? []).map((a) => ({ label: a.label, value: aed(a.amount) }))}
+            />
+          )}
+          {widgets.trend && (
+            <div className="dash-trend">
+              {k?.trendMonthly ? (
+                <TrendChart series={buildTrendSeries(k.trendMonthly)} initial="1M" />
+              ) : (
+                <div className="dash-card flex h-full animate-pulse items-center justify-center text-sm text-[var(--dash-fg3)]">Loading…</div>
+              )}
+            </div>
+          )}
         </div>
 
         {k && k.upcomingDue.count > 0 && (
@@ -208,11 +329,11 @@ export default function DashboardPage() {
         )}
 
         <div className="dash-bottom-row">
-          <AiInsights items={k ? buildInsights(k) : []} />
+          {widgets.insights && <AiInsights items={k ? buildInsights(k) : []} />}
           <QuickActions actions={ACTIONS} />
         </div>
 
-        <RecentInvoices invoices={k?.recentInvoices ?? []} />
+        {widgets.recent && <RecentInvoices invoices={k?.recentInvoices ?? []} />}
       </div>
     </div>
   );
