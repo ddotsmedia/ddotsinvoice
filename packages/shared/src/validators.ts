@@ -12,7 +12,11 @@ export const companySchema = z.object({
   trn: z.string().max(15).optional().or(z.literal('')),
   email: z.string().email().optional().or(z.literal('')),
   phone: z.string().max(20).optional(),
+  address: z.string().optional(),
+  addressAr: z.string().optional(),
   currency: z.nativeEnum(Currency),
+  fiscalYearStart: z.string().max(5).optional(),
+  logoUrl: z.string().max(500).optional(),
 });
 
 export const inviteUserSchema = z.object({

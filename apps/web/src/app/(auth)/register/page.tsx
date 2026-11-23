@@ -9,7 +9,7 @@ import { z } from 'zod';
 import { api, setAccessToken } from '@/lib/api';
 import { useQueryClient } from '@tanstack/react-query';
 import { Field, inputCls } from '@/components/ui';
-import { CheckCircle2, FileText, Zap } from 'lucide-react';
+import { CheckCircle2, ChevronDown, FileText, Zap } from 'lucide-react';
 
 const schema = z.object({
   tenantName: z.string().min(2, 'Company name required'),
@@ -17,6 +17,11 @@ const schema = z.object({
   lastName: z.string().min(1, 'Last name required'),
   email: z.string().email('Valid email required'),
   password: z.string().min(8, 'At least 8 characters'),
+  phone: z.string().max(20).optional(),
+  country: z.string().max(100).optional(),
+  industry: z.string().max(100).optional(),
+  companySize: z.string().max(50).optional(),
+  referralSource: z.string().max(100).optional(),
 });
 type Form = z.infer<typeof schema>;
 
@@ -53,6 +58,7 @@ export default function RegisterPage() {
   const qc = useQueryClient();
   const [error, setError] = useState<string | null>(null);
   const [passwordValue, setPasswordValue] = useState('');
+  const [showOptional, setShowOptional] = useState(false);
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({ resolver: zodResolver(schema) });
 
   const onSubmit = handleSubmit(async (v) => {
@@ -173,6 +179,90 @@ export default function RegisterPage() {
                   />
                 </Field>
                 <PasswordStrength value={passwordValue} />
+              </div>
+
+              {/* Optional fields toggle */}
+              <div>
+                <button
+                  type="button"
+                  onClick={() => setShowOptional((v) => !v)}
+                  className="flex w-full items-center justify-between rounded-lg border border-dashed border-slate-200 dark:border-slate-700 px-3 py-2 text-xs text-slate-400 hover:border-slate-300 hover:text-slate-500 transition-colors"
+                >
+                  <span>Optional — help us improve DdotsInvoice</span>
+                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${showOptional ? 'rotate-180' : ''}`} />
+                </button>
+
+                {showOptional && (
+                  <div className="mt-3 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 p-4 space-y-3">
+                    <Field label="Phone Number">
+                      <input
+                        type="tel"
+                        dir="ltr"
+                        placeholder="+971 50 XXX XXXX"
+                        className={`${inputCls} h-10`}
+                        {...register('phone')}
+                      />
+                    </Field>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label="Country">
+                        <select className={`${inputCls} h-10`} {...register('country')}>
+                          <option value="">Select country</option>
+                          <option>UAE</option>
+                          <option>Saudi Arabia</option>
+                          <option>Qatar</option>
+                          <option>Kuwait</option>
+                          <option>Bahrain</option>
+                          <option>Oman</option>
+                          <option>Egypt</option>
+                          <option>India</option>
+                          <option>Pakistan</option>
+                          <option>UK</option>
+                          <option>USA</option>
+                          <option>Other</option>
+                        </select>
+                      </Field>
+
+                      <Field label="Company Size">
+                        <select className={`${inputCls} h-10`} {...register('companySize')}>
+                          <option value="">Select size</option>
+                          <option>1–10</option>
+                          <option>11–50</option>
+                          <option>51–200</option>
+                          <option>201–500</option>
+                          <option>500+</option>
+                        </select>
+                      </Field>
+                    </div>
+
+                    <Field label="Industry">
+                      <select className={`${inputCls} h-10`} {...register('industry')}>
+                        <option value="">Select industry</option>
+                        <option>Technology</option>
+                        <option>Finance & Accounting</option>
+                        <option>Real Estate</option>
+                        <option>Retail & Trading</option>
+                        <option>Healthcare</option>
+                        <option>Construction</option>
+                        <option>Hospitality</option>
+                        <option>Manufacturing</option>
+                        <option>Consulting</option>
+                        <option>Other</option>
+                      </select>
+                    </Field>
+
+                    <Field label="How did you hear about us?">
+                      <select className={`${inputCls} h-10`} {...register('referralSource')}>
+                        <option value="">Select source</option>
+                        <option>Google Search</option>
+                        <option>Social Media</option>
+                        <option>Referral</option>
+                        <option>Event</option>
+                        <option>Other</option>
+                      </select>
+                    </Field>
+                  </div>
+                )}
               </div>
 
               {error && (

@@ -116,7 +116,7 @@ const SETTINGS_GROUP: Group = {
   key: 'settings', en: 'Settings', ar: 'الإعدادات', icon: Settings,
   iconBg: 'bg-slate-500/10', iconColor: 'text-slate-400',
   items: [
-    { href: '/dashboard/admin/company', en: 'Company Profile', ar: 'ملف الشركة', icon: Building2 },
+    { href: '/dashboard/settings/company', en: 'Company Profile', ar: 'ملف الشركة', icon: Building2 },
     { href: '/dashboard/settings/team', en: 'Team', ar: 'الفريق', icon: Users },
   ],
 };

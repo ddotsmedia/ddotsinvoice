@@ -11,6 +11,8 @@ export class CreateCompanyDto {
   @IsOptional() @IsString() address?: string;
   @IsOptional() @IsString() addressAr?: string;
   @IsOptional() @IsEnum(Currency) currency?: Currency;
+  @IsOptional() @IsString() @MaxLength(5) fiscalYearStart?: string;
+  @IsOptional() @IsString() @MaxLength(500) logoUrl?: string;
 }
 
 export class UpdateCompanyDto extends PartialType(CreateCompanyDto) {}

@@ -64,12 +64,29 @@ export function CreateCompanyModal({ open, onOpenChange, onSuccess }: Props) {
         <Field label={t('common.phone')} error={errors.phone?.message}>
           <input dir="ltr" className={inputCls} {...register('phone')} />
         </Field>
+        <Field label="Address" error={errors.address?.message}>
+          <textarea rows={3} placeholder="Office address" className={inputCls} {...register('address')} />
+        </Field>
+        <Field label="Address (Arabic)" error={errors.addressAr?.message}>
+          <textarea rows={2} dir="rtl" placeholder="العنوان بالعربية" className={inputCls} {...register('addressAr')} />
+        </Field>
         <Field label={t('common.currency')} error={errors.currency?.message}>
           <select className={inputCls} {...register('currency')}>
             {Object.values(Currency).map((c) => (
               <option key={c} value={c}>{c}</option>
             ))}
           </select>
+        </Field>
+        <Field label="Fiscal Year Start" error={errors.fiscalYearStart?.message}>
+          <select className={inputCls} {...register('fiscalYearStart')}>
+            <option value="01-01">Jan 1</option>
+            <option value="04-01">Apr 1</option>
+            <option value="07-01">Jul 1</option>
+            <option value="10-01">Oct 1</option>
+          </select>
+        </Field>
+        <Field label="Logo URL (optional)" error={errors.logoUrl?.message}>
+          <input dir="ltr" type="url" placeholder="https://..." className={inputCls} {...register('logoUrl')} />
         </Field>
         {create.isError && <p className="text-sm text-red-600">{t('common.error')}</p>}
         <div className="flex justify-end gap-2 pt-2">

@@ -74,7 +74,7 @@ export class AuthService {
       .where(and(eq(refreshTokens.userId, userId), eq(refreshTokens.tokenHash, tokenHash)));
   }
 
-  async registerTenant(dto: { tenantName: string; firstName: string; lastName: string; email: string; password: string }) {
+  async registerTenant(dto: { tenantName: string; firstName: string; lastName: string; email: string; password: string; phone?: string; country?: string; industry?: string; companySize?: string; referralSource?: string }) {
     const email = dto.email.toLowerCase();
     // Check email uniqueness
     const [existing] = await this.db.select({ id: users.id }).from(users).where(eq(users.email, email)).limit(1);
@@ -84,7 +84,13 @@ export class AuthService {
     const passwordHash = await argon2.hash(dto.password);
 
     // Create tenant + admin user in a transaction
-    const [tenant] = await this.db.insert(tenants).values({ slug, name: dto.tenantName, plan: 'starter', isActive: true }).returning();
+    const tenantSettings = {
+      country: dto.country || null,
+      industry: dto.industry || null,
+      companySize: dto.companySize || null,
+      referralSource: dto.referralSource || null,
+    };
+    const [tenant] = await this.db.insert(tenants).values({ slug, name: dto.tenantName, plan: 'starter', isActive: true, settings: tenantSettings }).returning();
     const [user] = await this.db.insert(users).values({
       tenantId: tenant.id,
       email,
