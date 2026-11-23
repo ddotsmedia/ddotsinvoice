@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { usePathname } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import { ChevronRight, LogOut, Menu, Moon, Plus, Search, Sun } from 'lucide-react';
+import { ChevronRight, LogOut, Menu, Moon, Phone, Plus, Search, Sun } from 'lucide-react';
 import { useTranslations } from 'next-intl';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
@@ -101,6 +101,13 @@ export function TopNav({ onMenu }: { onMenu: () => void }) {
       <button type="button" aria-label="Menu" className={`${iconBtn} md:hidden`} onClick={onMenu}>
         <Menu className="h-5 w-5" />
       </button>
+      <a
+        href="tel:+971509379212"
+        className="hidden md:flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors"
+      >
+        <Phone className="h-3.5 w-3.5" />
+        +971 50 937 9212
+      </a>
       <nav className="hidden min-w-0 items-center gap-1 text-sm text-secondary sm:flex" aria-label="Breadcrumb">
         {trail.map((c, i) => (
           <span key={`${c}-${i}`} className="flex items-center gap-1">

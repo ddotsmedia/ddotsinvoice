@@ -220,6 +220,17 @@ export function Sidebar() {
         </div>
       </nav>
 
+      {/* Suggest feature link */}
+      <div className="mx-3 mb-1 text-center">
+        <a
+          href="/suggest"
+          target="_blank"
+          className="text-[10px] text-slate-400 hover:text-[#3B5BDB] transition-colors"
+        >
+          Suggest a feature →
+        </a>
+      </div>
+
       {/* User footer */}
       <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 hover:bg-white/5 transition-colors">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow">
