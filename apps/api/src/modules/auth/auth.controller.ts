@@ -75,4 +75,20 @@ export class AuthController {
   me(@CurrentUser() actor: AccessTokenPayload) {
     return this.auth.me(actor.sub);
   }
+
+  /** One-time: attach a tenant to a user who was created without one */
+  @Post('claim-tenant')
+  @HttpCode(200)
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth()
+  @SkipThrottle({ 'auth-login': true, 'auth-register': true })
+  async claimTenant(
+    @CurrentUser() actor: AccessTokenPayload,
+    @Body() body: { tenantName: string },
+    @Res({ passthrough: true }) res: FastifyReply,
+  ) {
+    const { accessToken, refreshToken, user } = await this.auth.claimTenant(actor.sub, body.tenantName || 'My Business');
+    res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    return { accessToken, user };
+  }
 }

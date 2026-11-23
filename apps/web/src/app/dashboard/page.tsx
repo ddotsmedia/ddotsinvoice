@@ -7,6 +7,7 @@ import { useAuth } from '@/lib/auth';
 import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
 import { useLabel } from '@/lib/ui-helpers';
 import { CreateCompanyModal } from '@/components/create-company-modal';
+import { ClaimTenantBanner } from '@/components/claim-tenant-modal';
 import { KpiCard } from './components/KpiCard';
 import { HeroCard } from './components/HeroCard';
 import { CashRunwayCard } from './components/CashRunwayCard';
@@ -68,6 +69,12 @@ export default function DashboardPage() {
   const [createOpen, setCreateOpen] = useState(false);
 
   if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
+
+  // User exists but has no tenant — created before tenant assignment (e.g. via admin).
+  // Show setup step so we can claim a tenant and get a valid JWT before creating companies.
+  if (!user.tenantId) {
+    return <ClaimTenantBanner onSuccess={() => void qc.invalidateQueries()} />;
+  }
 
   if (!companyId) {
     return (

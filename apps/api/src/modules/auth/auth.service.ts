@@ -104,6 +104,18 @@ export class AuthService {
     return publicUser(user);
   }
 
+  /** Creates a tenant for a user who has no tenantId (e.g. created via super-admin without tenant) */
+  async claimTenant(userId: string, tenantName: string) {
+    const [user] = await this.db.select().from(users).where(eq(users.id, userId)).limit(1);
+    if (!user) throw new UnauthorizedException();
+    if (user.tenantId) return this.issue(user); // already has tenant, just re-issue
+
+    const slug = tenantName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '').slice(0, 100) + '-' + Math.random().toString(36).slice(2, 7);
+    const [tenant] = await this.db.insert(tenants).values({ slug, name: tenantName, plan: 'starter', isActive: true }).returning();
+    const [updated] = await this.db.update(users).set({ tenantId: tenant.id, role: 'company_admin' }).where(eq(users.id, userId)).returning();
+    return this.issue(updated);
+  }
+
   private async issue(user: UserRow) {
     const payload: AccessTokenPayload = {
       sub: user.id,
