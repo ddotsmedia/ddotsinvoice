@@ -1,8 +1,9 @@
 'use client';
 
 import { useState } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { BarChart3, BookOpen, Building2, CreditCard, FileText, Plus, Receipt } from 'lucide-react';
+import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 import { useActiveCompanyId, setStoredCompanyId } from '@/lib/company';
 import { useLabel } from '@/lib/ui-helpers';
@@ -16,14 +17,18 @@ import { AiInsights, type Insight } from './components/AiInsights';
 import { QuickActions, type QuickAction } from './components/QuickActions';
 import './dashboard.css';
 
-// ── Mock data (hardcoded until the dashboard API is wired up) ─────────────
-const KPIS = [
-  { label: 'Receivables', amount: 'AED 602,238', change: 15.8, sub: 'vs 30d · Outstanding invoices' },
-  { label: 'Payables', amount: 'AED 117,525', change: 2.5, sub: 'vs 30d · Outstanding bills' },
-  { label: 'Cash Position', amount: 'AED 1,126,250', change: 0, sub: 'vs 30d · Bank + Cash' },
-  { label: 'Net VAT', amount: '−AED 5,596', change: 85.4, sub: 'vs 30d · Output − Input VAT' },
-];
+interface DashboardKpis {
+  receivables: { amount: string; count: number };
+  payables: { amount: string; count: number };
+  cashPosition: { amount: string };
+  netVat: { amount: string; from: string; to: string };
+}
 
+// Display-only formatting; amounts stay decimal strings (Intl formats them exactly)
+const aedFmt = new Intl.NumberFormat('en-AE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+const aed = (v: string) => `AED ${aedFmt.format(v as never)}`;
+
+// ── Mock data (trend chart, hero card and AI insights are not live yet) ───
 const TREND: Record<Period, TrendPoint[]> = {
   '1D': ['9AM', '10', '11', '12PM', '1', '2', '3', '4', '5'].map((label, i) => ({ label, value: [1200, 1800, 1400, 2100, 1900, 2400, 2200, 2600, 2800][i] })),
   '1W': ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((label, i) => ({ label, value: [5200, 7800, 6400, 9100, 8200, 7600, 10200][i] })),
@@ -67,6 +72,18 @@ export default function DashboardPage() {
   const companyId = useActiveCompanyId(user);
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
+  const kpisQ = useQuery({
+    queryKey: ['dashboard-kpis', companyId],
+    queryFn: async () => (await api.get<DashboardKpis>('/dashboard/kpis')).data,
+    enabled: !!companyId,
+  });
+  const k = kpisQ.data;
+  const kpiCards = k && [
+    { label: 'Receivables', amount: aed(k.receivables.amount), sub: `${k.receivables.count} open invoice${k.receivables.count === 1 ? '' : 's'}` },
+    { label: 'Payables', amount: aed(k.payables.amount), sub: `${k.payables.count} open bill${k.payables.count === 1 ? '' : 's'}` },
+    { label: 'Cash Position', amount: aed(k.cashPosition.amount), sub: 'Bank + Cash' },
+    { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}` },
+  ];
 
   if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
 
@@ -111,14 +128,22 @@ export default function DashboardPage() {
             {getGreeting()}, {user.firstName} 👋
           </h1>
           <p className="mt-0.5 text-sm text-[var(--dash-fg2)]">
-            FY 2024–25 · <span className="text-[var(--dash-fg3)]">Sample figures — live data not connected yet</span>
+            <span className="text-[var(--dash-fg3)]">
+              {k ? 'Live figures' : kpisQ.isError ? 'Could not load live figures' : 'Loading live figures…'}
+            </span>
           </p>
         </div>
 
         <div className="dash-kpi-row">
-          {KPIS.map((k) => (
-            <KpiCard key={k.label} label={k.label} amount={k.amount} change={k.change} sub={k.sub} />
-          ))}
+          {kpiCards
+            ? kpiCards.map((c) => <KpiCard key={c.label} label={c.label} amount={c.amount} sub={c.sub} />)
+            : ['Receivables', 'Payables', 'Cash Position', 'Net VAT'].map((l) => (
+                <div key={l} className="dash-card flex animate-pulse flex-col gap-2" aria-busy="true">
+                  <div className="h-3 w-20 rounded bg-gray-200" />
+                  <div className="h-7 w-32 rounded bg-gray-200" />
+                  <div className="h-3 w-24 rounded bg-gray-200" />
+                </div>
+              ))}
         </div>
 
         <div className="dash-main-grid">
@@ -141,6 +166,8 @@ export default function DashboardPage() {
             <TrendChart series={TREND} initial="1M" />
           </div>
         </div>
+
+        <p className="-mt-2 text-xs text-[var(--dash-fg3)]">Net profit, cash runway, trend chart and AI insights show sample data — live data coming soon.</p>
 
         <div className="dash-bottom-row">
           <AiInsights items={INSIGHTS} />

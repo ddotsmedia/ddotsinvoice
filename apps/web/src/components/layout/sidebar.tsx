@@ -8,7 +8,7 @@ import {
   Banknote, BarChart2, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange,
   ChevronDown, ChevronRight, CreditCard, FileMinus, FileText, LayoutDashboard, Landmark,
   ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale, Table as TableIcon, Target,
-  Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText,
+  Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText, Settings,
 } from 'lucide-react';
 import { useLabel } from '@/lib/ui-helpers';
 import { useAuth } from '@/lib/auth';
@@ -207,6 +207,17 @@ export function Sidebar() {
         </div>
       </nav>
 
+      {isAdmin && (
+        <Link
+          href="/dashboard/admin/company"
+          className={`mx-3 mb-2 flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition-colors ${
+            pathname.startsWith("/dashboard/admin/company") ? "bg-sidebar-active text-white" : "text-sidebar-text hover:bg-sidebar-hover hover:text-white"
+          }`}
+        >
+          <Settings className="h-4 w-4" />
+          {L("Settings", "الإعدادات")}
+        </Link>
+      )}
       {/* User footer */}
       <div className="mx-3 mb-3 flex items-center gap-3 rounded-xl border border-white/10 px-3 py-3 hover:bg-white/5 transition-colors">
         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-brand-400 to-brand-600 text-sm font-semibold text-white shadow">
