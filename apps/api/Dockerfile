@@ -6,7 +6,6 @@ COPY packages/ ./packages/
 COPY apps/api/ ./apps/api/
 COPY apps/web/package.json ./apps/web/package.json
 RUN pnpm install --frozen-lockfile
-RUN pnpm --filter @ddotsinvoice/db db:generate
 RUN pnpm --filter "./packages/*" build
 RUN pnpm --filter @ddotsinvoice/api build
 
