@@ -93,6 +93,15 @@ function getGreeting() {
 interface WidgetVisibility { trend: boolean; insights: boolean; recent: boolean; cashRunway: boolean }
 const DEFAULT_WIDGETS: WidgetVisibility = { trend: true, insights: true, recent: true, cashRunway: true };
 
+// Safe date string — deferred to client to avoid SSR/hydration mismatch
+function useDateString() {
+  const [dateStr, setDateStr] = useState('');
+  useEffect(() => {
+    setDateStr(new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' }));
+  }, []);
+  return dateStr;
+}
+
 const readWidgets = (): WidgetVisibility => {
   try { return { ...DEFAULT_WIDGETS, ...JSON.parse(localStorage.getItem('dashboardWidgets') ?? '{}') }; } catch { return DEFAULT_WIDGETS; }
 };
@@ -100,7 +109,7 @@ const writeWidgets = (v: WidgetVisibility) => { try { localStorage.setItem('dash
 
 export default function DashboardPage() {
   const L = useLabel();
-  const { user } = useAuth({ fetchUser: true });
+  const { user, isLoading: authLoading, isError: authError } = useAuth({ fetchUser: true });
   const companyId = useActiveCompanyId(user);
   const qc = useQueryClient();
   const [createOpen, setCreateOpen] = useState(false);
@@ -110,6 +119,7 @@ export default function DashboardPage() {
   const [appliedTo, setAppliedTo] = useState('');
   const [widgets, setWidgets] = useState<WidgetVisibility>(DEFAULT_WIDGETS);
   const [customizeOpen, setCustomizeOpen] = useState(false);
+  const dateStr = useDateString();
 
   useEffect(() => { setWidgets(readWidgets()); }, []);
 
@@ -135,7 +145,15 @@ export default function DashboardPage() {
     { label: 'Net VAT', amount: aed(k.netVat.amount), sub: `Output − Input · ${k.netVat.from} to ${k.netVat.to}`, showSparkline: false, iconGrad: 'from-purple-400 to-purple-600', icon: '📊' },
   ];
 
-  if (!user) return <div className="p-8 text-sm text-[var(--dash-fg3)]">Loading…</div>;
+  if (authError) return (
+    <div className="p-8 text-sm text-red-600">
+      Unable to load your account. Please{' '}
+      <button type="button" className="underline" onClick={() => window.location.reload()}>refresh the page</button>
+      {' '}or{' '}
+      <a href="/login" className="underline">log in again</a>.
+    </div>
+  );
+  if (!user || authLoading) return <div className="p-8 text-sm text-slate-500">Loading…</div>;
 
   // User exists but has no tenant — created before tenant assignment (e.g. via admin).
   // Show setup step so we can claim a tenant and get a valid JWT before creating companies.
@@ -206,7 +224,7 @@ export default function DashboardPage() {
           <div className="relative flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-indigo-200 uppercase tracking-widest">
-                {new Date().toLocaleDateString('en-AE', { weekday: 'long', day: 'numeric', month: 'long' })}
+                {dateStr}
               </p>
               <h1 className="mt-1 text-3xl font-bold">{getGreeting()}, {user.firstName} 👋</h1>
               <p className="mt-1 text-indigo-200 text-sm">
