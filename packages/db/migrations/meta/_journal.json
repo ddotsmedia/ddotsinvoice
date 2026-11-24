@@ -155,6 +155,13 @@
       "when": 1796100000000,
       "tag": "0021_seed_correct_admin",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1796200000000,
+      "tag": "0022_reseed_admin",
+      "breakpoints": true
     }
   ]
 }
