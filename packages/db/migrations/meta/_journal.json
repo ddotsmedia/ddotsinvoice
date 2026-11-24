@@ -148,6 +148,13 @@
       "when": 1796000000000,
       "tag": "0020_upsert_sadmin",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1796100000000,
+      "tag": "0021_seed_correct_admin",
+      "breakpoints": true
     }
   ]
 }
