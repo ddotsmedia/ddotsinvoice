@@ -12,7 +12,11 @@ export const api = axios.create({ baseURL: BASE, withCredentials: true });
 
 api.interceptors.request.use((config) => {
   if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
-  if (typeof window !== 'undefined') {
+  // X-Company-Id is only relevant for company-scoped operations, not for auth endpoints.
+  // Sending it on /auth/* causes PermissionsGuard to run assertCompanyInTenant on /auth/me,
+  // which can throw 403 (not retried by the refresh interceptor) → "Unable to load your account".
+  const isAuthRoute = config.url?.startsWith('/auth/');
+  if (!isAuthRoute && typeof window !== 'undefined') {
     try {
       const cid = localStorage.getItem('ddots.companyId');
       if (cid) config.headers['X-Company-Id'] = cid; // honoured by the API for tenant admins only

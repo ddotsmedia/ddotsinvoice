@@ -35,6 +35,8 @@ export function useAuth({ fetchUser = false }: { fetchUser?: boolean } = {}) {
     await api.post('/auth/logout').catch(() => undefined);
     setAccessToken(null);
     qc.clear();
+    // Clear stored company selection so the next login doesn't send a stale X-Company-Id header
+    try { localStorage.removeItem('ddots.companyId'); } catch { /* storage unavailable */ }
     router.replace('/login');
   };
 
