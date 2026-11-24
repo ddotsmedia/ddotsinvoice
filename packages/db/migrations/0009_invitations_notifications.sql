@@ -26,8 +26,18 @@ CREATE TABLE IF NOT EXISTS "notifications" (
 CREATE INDEX IF NOT EXISTS "notifications_user_idx" ON "notifications" ("user_id", "is_read", "created_at");--> statement-breakpoint
 ALTER TABLE "invitations" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "invitations" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
-CREATE POLICY tenant_isolation ON "invitations" USING (tenant_id = current_setting('app.tenant_id')::uuid);--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='invitations' AND policyname='tenant_isolation') THEN
+    EXECUTE 'CREATE POLICY tenant_isolation ON "invitations" USING (tenant_id = current_setting(''app.tenant_id'')::uuid)';
+  END IF;
+END$$;--> statement-breakpoint
 ALTER TABLE "notifications" ENABLE ROW LEVEL SECURITY;--> statement-breakpoint
 ALTER TABLE "notifications" FORCE ROW LEVEL SECURITY;--> statement-breakpoint
-CREATE POLICY tenant_isolation ON "notifications" USING (tenant_id = current_setting('app.tenant_id')::uuid);--> statement-breakpoint
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE schemaname='public' AND tablename='notifications' AND policyname='tenant_isolation') THEN
+    EXECUTE 'CREATE POLICY tenant_isolation ON "notifications" USING (tenant_id = current_setting(''app.tenant_id'')::uuid)';
+  END IF;
+END$$;--> statement-breakpoint
 GRANT SELECT, INSERT, UPDATE, DELETE ON "invitations", "notifications" TO ddots_app;
