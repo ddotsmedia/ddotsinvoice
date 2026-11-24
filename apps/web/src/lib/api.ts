@@ -1,6 +1,7 @@
 import axios, { type AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 // Access token is kept in memory only (never localStorage)
+// rebuild-trigger: 2026-11-24
 let accessToken: string | null = null;
 export const setAccessToken = (t: string | null): void => {
   accessToken = t;
