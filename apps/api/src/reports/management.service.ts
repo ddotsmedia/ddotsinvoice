@@ -28,6 +28,7 @@ export class ManagementReportsService {
 
   // Receivables (customers) or payables (suppliers) aged by days past due
   aging(actor: AccessTokenPayload, kind: 'receivables' | 'payables', asOfDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const isAR = kind === 'receivables';
@@ -64,6 +65,7 @@ export class ManagementReportsService {
   }
 
   salesByCustomer(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const docs = await tx
@@ -85,6 +87,7 @@ export class ManagementReportsService {
 
   // Invoice lines grouped by description (lines carry no item id)
   salesByItem(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const rows = await tx
@@ -107,6 +110,7 @@ export class ManagementReportsService {
   }
 
   purchasesBySupplier(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const docs = await tx
@@ -126,6 +130,7 @@ export class ManagementReportsService {
   }
 
   payrollSummary(actor: AccessTokenPayload, year: number) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const runs = await tx
@@ -142,6 +147,7 @@ export class ManagementReportsService {
   }
 
   dashboard(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve({ revenue: '0', expenses: '0', netProfit: '0' });
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const mv = await movements(tx, companyId, fromDate, toDate);

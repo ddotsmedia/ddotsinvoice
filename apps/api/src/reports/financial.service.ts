@@ -20,6 +20,7 @@ export class FinancialReportsService {
   }
 
   balanceSheet(actor: AccessTokenPayload, asOfDate: string) {
+    if (!actor.tenantId) return Promise.resolve({ asset: [], liability: [], equity: [], retainedEarnings: '0', totalAssets: '0', totalLiabilities: '0', totalEquity: '0' });
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, (tx) => this.bsWith(tx, companyId, asOfDate));
   }
@@ -55,6 +56,7 @@ export class FinancialReportsService {
   }
 
   incomeStatement(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve({ revenue: [], expenses: [], grossProfit: '0', operatingProfit: '0', netProfit: '0' });
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, (tx) => this.isWith(tx, companyId, fromDate, toDate));
   }
@@ -89,6 +91,7 @@ export class FinancialReportsService {
   }
 
   trialBalance(actor: AccessTokenPayload, asOfDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const mv = await movements(tx, companyId, undefined, asOfDate);
@@ -106,6 +109,7 @@ export class FinancialReportsService {
 
   // Indirect method: net profit adjusted for AR, inventory, AP and GRNI movements. Investing/financing not yet modelled.
   cashFlow(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve({ operating: '0', investing: '0', financing: '0', net: '0' });
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const is = await this.isWith(tx, companyId, fromDate, toDate);

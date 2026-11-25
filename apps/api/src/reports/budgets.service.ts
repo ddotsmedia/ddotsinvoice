@@ -54,6 +54,7 @@ export class BudgetsService {
   }
 
   list(actor: AccessTokenPayload, q: BudgetQueryDto) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     const conds = [eq(budgets.companyId, companyId)];
     if (q.year) conds.push(eq(budgets.fiscalYear, q.year));
@@ -61,11 +62,13 @@ export class BudgetsService {
   }
 
   findOne(actor: AccessTokenPayload, id: string) {
+    if (!actor.tenantId) return Promise.resolve(null);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, (tx) => this.load(tx, companyId, id));
   }
 
   create(actor: AccessTokenPayload, dto: CreateBudgetDto) {
+    if (!actor.tenantId) throw new Error('Platform admin cannot create budgets');
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const ids = [...new Set(dto.lines.map((l) => l.accountId))];
@@ -91,6 +94,7 @@ export class BudgetsService {
   }
 
   approve(actor: AccessTokenPayload, id: string) {
+    if (!actor.tenantId) return Promise.resolve(null);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const b = await this.find(tx, companyId, id);
@@ -102,6 +106,7 @@ export class BudgetsService {
 
   // Actual = posted activity in the budget period, signed by the account's normal side
   refreshActuals(actor: AccessTokenPayload, id: string) {
+    if (!actor.tenantId) return Promise.resolve(null);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const b = await this.find(tx, companyId, id);

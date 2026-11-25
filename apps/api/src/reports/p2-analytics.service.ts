@@ -73,6 +73,7 @@ export class P2AnalyticsService {
   }
 
   async vatDashboard(actor: AccessTokenPayload) {
+    if (!actor.tenantId) return { outputVat: '0', inputVat: '0', netVat: '0', periods: [] };
     const { tenantId, companyId } = this.scope(actor);
     const today = todayIso();
     const { year, q } = quarterOf(today);
@@ -157,6 +158,7 @@ export class P2AnalyticsService {
   }
 
   async cashFlowForecast(actor: AccessTokenPayload) {
+    if (!actor.tenantId) return { inflows: [], outflows: [], net: '0' };
     const { tenantId, companyId } = this.scope(actor);
     const today = todayIso();
     const COLLECTION_RATE = 0.8;
@@ -233,6 +235,7 @@ export class P2AnalyticsService {
   }
 
   async customerAnalytics(actor: AccessTokenPayload) {
+    if (!actor.tenantId) return { topCustomers: [], retentionRate: '0', avgOrderValue: '0' };
     const { tenantId, companyId } = this.scope(actor);
     const today = todayIso();
     const from12 = monthStart(today, 11);

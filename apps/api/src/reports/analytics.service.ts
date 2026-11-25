@@ -28,6 +28,10 @@ export class AnalyticsReportsService {
 
   /** Revenue vs expenses per calendar month for the 12 months ending at `toDate` (posted journals). */
   plMonthly(actor: AccessTokenPayload, toDate: string = todayIso()) {
+    if (!actor.tenantId) {
+      const months = Array.from({ length: 12 }, (_, i) => monthStart(toDate ?? todayIso(), 11 - i).slice(0, 7));
+      return Promise.resolve(months.map((month) => ({ month, revenue: '0', expenses: '0', netProfit: '0' })));
+    }
     const { tenantId, companyId } = this.scope(actor);
     const from = monthStart(toDate, 11);
     return withTenant(this.db, tenantId, async (tx) => {
@@ -67,6 +71,7 @@ export class AnalyticsReportsService {
 
   /** Top 8 revenue accounts by net credit in the range, sorted descending. */
   revenueBreakdown(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const rows = await tx
@@ -102,6 +107,7 @@ export class AnalyticsReportsService {
 
   /** Customer invoices (type=invoice) grouped into Paid / Outstanding / Overdue / Draft, plus forecast (draft + sent). */
   invoiceSummary(actor: AccessTokenPayload) {
+    if (!actor.tenantId) return Promise.resolve({ paid: { count: 0, amount: '0' }, outstanding: { count: 0, amount: '0' }, overdue: { count: 0, amount: '0' }, draft: { count: 0, amount: '0' }, totalValue: '0', forecast: '0' });
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const rows = await tx
@@ -135,6 +141,10 @@ export class AnalyticsReportsService {
 
   /** Per-month invoice figures (by invoice date) for the 12 months ending at `toDate`. */
   invoiceMonthly(actor: AccessTokenPayload, toDate: string = todayIso()) {
+    if (!actor.tenantId) {
+      const months = Array.from({ length: 12 }, (_, i) => monthStart(toDate ?? todayIso(), 11 - i).slice(0, 7));
+      return Promise.resolve(months.map((month) => ({ month, invoiced: '0', paid: '0', outstanding: '0' })));
+    }
     const { tenantId, companyId } = this.scope(actor);
     const from = monthStart(toDate, 11);
     return withTenant(this.db, tenantId, async (tx) => {
@@ -165,6 +175,7 @@ export class AnalyticsReportsService {
 
   /** Receipts grouped by payment method for the range (posted/reconciled only). */
   paymentMethods(actor: AccessTokenPayload, fromDate: string, toDate: string) {
+    if (!actor.tenantId) return Promise.resolve([]);
     const { tenantId, companyId } = this.scope(actor);
     return withTenant(this.db, tenantId, async (tx) => {
       const rows = await tx

@@ -12,6 +12,7 @@ export class CompaniesService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
   list(actor: AccessTokenPayload, q: PageQueryDto) {
+    if (!actor.tenantId) return Promise.resolve({ items: [], total: 0, page: q.page, limit: q.limit });
     const tenantId = requireTenant(actor.tenantId);
     const where = and(eq(companies.tenantId, tenantId), isNull(companies.deletedAt));
     return withTenant(this.db, tenantId, async (tx) => {

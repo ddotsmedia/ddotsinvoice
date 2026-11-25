@@ -40,6 +40,7 @@ export class NotificationsService {
   }
 
   async list(actor: AccessTokenPayload) {
+    if (!actor.tenantId) return { items: [], unread: 0 };
     const tenantId = requireTenant(actor.tenantId);
     return withTenant(this.db, tenantId, async (tx) => {
       const items = await tx

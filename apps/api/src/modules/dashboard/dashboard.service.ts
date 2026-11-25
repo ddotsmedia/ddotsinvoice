@@ -26,6 +26,13 @@ export class DashboardService {
   constructor(@Inject(DB) private readonly db: Db) {}
 
   kpis(actor: AccessTokenPayload, fromDate?: string, toDate?: string) {
+    if (!actor.tenantId) return Promise.resolve({
+      receivables: { amount: '0', count: 0 }, payables: { amount: '0', count: 0 },
+      cashPosition: { amount: '0' }, netVat: { amount: '0', from: '', to: '' },
+      recentInvoices: [], netProfitLast30: { amount: '0' },
+      cashRunway: { weeks: 0, accounts: [] }, overdueInvoices: { count: 0, totalAmount: '0' },
+      upcomingDue: { count: 0, totalAmount: '0' }, trendMonthly: [],
+    });
     const tenantId = requireTenant(actor.tenantId);
     const companyId = requireCompany(actor.companyId);
     const range = quarterRange(todayIso());
