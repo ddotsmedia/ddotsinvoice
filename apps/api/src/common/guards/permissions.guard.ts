@@ -60,7 +60,7 @@ export class PermissionsGuard implements CanActivate {
     }
 
     if (!required?.length) return true;
-    if (actor.role === UserRole.SUPER_ADMIN) return true;
+    if (actor.role === UserRole.SUPER_ADMIN || actor.role === UserRole.PLATFORM_ADMIN) return true;
 
     const granted = await this.grantedCodes({ ...actor, companyId: req.activeCompanyId ?? actor.companyId });
     if (!required.every((code) => granted.has(code))) {
