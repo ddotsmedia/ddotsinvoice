@@ -31,7 +31,7 @@ export class AuthController {
 
   @Post('register-tenant')
   @HttpCode(201)
-  @Throttle({ 'auth-register': { ttl: 60 * 60 * 1000, limit: 3 } })
+  @Throttle({ 'auth-register': { ttl: 60 * 60 * 1000, limit: 20 } })
   async registerTenant(@Body() dto: RegisterTenantDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.registerTenant(dto);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
