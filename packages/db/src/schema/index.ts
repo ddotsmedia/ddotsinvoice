@@ -110,3 +110,5 @@ export const journalLinesRelations = relations(journalLines, ({ one }) => ({
 }));
 export * from './invitations';
 export * from './notifications';
+export * from './fixed_assets';
+export * from './pdc_cheques';

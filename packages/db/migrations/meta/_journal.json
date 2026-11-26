@@ -169,6 +169,13 @@
       "when": 1796300000000,
       "tag": "0023_fix_admin_pk_conflict",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795675590974,
+      "tag": "0024_fixed_assets_pdc",
+      "breakpoints": true
     }
   ]
 }

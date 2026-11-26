@@ -8,7 +8,7 @@ import {
   Banknote, BarChart2, BarChart3, BookOpen, Boxes, Building2, CalendarDays, CalendarRange,
   ChevronDown, ChevronRight, CreditCard, FileMinus, FileText, LayoutDashboard, Landmark,
   ListTree, LogOut, PackageCheck, Receipt, ShoppingCart, Scale, Table as TableIcon, Target,
-  Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText, Settings,
+  Truck, UserRound, Users, Wallet, ArrowLeftRight, Shield, ScrollText, Settings, Package, FileCheck,
 } from 'lucide-react';
 import { useLabel } from '@/lib/ui-helpers';
 import { useAuth } from '@/lib/auth';
@@ -58,6 +58,14 @@ const GROUPS: Group[] = [
       { href: '/dashboard/payments/bank-accounts', en: 'Bank Accounts', ar: 'الحسابات البنكية', icon: Landmark },
       { href: '/dashboard/payments/bank-transactions', en: 'Bank Transactions', ar: 'الحركات البنكية', icon: ArrowLeftRight },
       { href: '/dashboard/payments/reconciliations', en: 'Reconciliation', ar: 'التسويات البنكية', icon: Scale },
+      { href: '/dashboard/payments/pdc', en: 'PDC Register', ar: 'سجل الشيكات الآجلة', icon: FileCheck },
+    ],
+  },
+  {
+    key: 'fixed-assets', en: 'Fixed Assets', ar: 'الأصول الثابتة', icon: Package,
+    iconBg: 'bg-amber-500/10', iconColor: 'text-amber-400',
+    items: [
+      { href: '/dashboard/fixed-assets', en: 'Assets Register', ar: 'سجل الأصول', icon: Package },
     ],
   },
   {

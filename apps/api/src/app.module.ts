@@ -26,6 +26,8 @@ import { InvitationsModule } from './modules/invitations/invitations.module';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { SuggestionsModule } from './modules/suggestions/suggestions.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { FixedAssetsModule } from './fixed-assets/fixed-assets.module';
+import { PdcModule } from './pdc/pdc.module';
 
 @Module({
   imports: [
@@ -57,6 +59,8 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     AdminModule,
     SuggestionsModule,
     SubscriptionModule,
+    FixedAssetsModule,
+    PdcModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
