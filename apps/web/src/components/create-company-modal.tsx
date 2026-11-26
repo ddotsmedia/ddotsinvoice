@@ -49,25 +49,26 @@ export function CreateCompanyModal({ open, onOpenChange, onSuccess }: Props) {
   return (
     <Modal open={open} onOpenChange={onOpenChange} title={t('companies.add')}>
       <form onSubmit={handleSubmit((v) => create.mutate(v))} className="space-y-3" noValidate>
-        <Field label={t('common.name')} error={errors.name?.message}>
-          <input className={inputCls} {...register('name')} />
+        <p className="text-xs text-secondary"><span className="text-red-500">*</span> Required fields</p>
+        <Field label="Company Name" required error={errors.name?.message}>
+          <input className={inputCls} placeholder="Legal company name" {...register('name')} />
         </Field>
-        <Field label={t('common.nameAr')} error={errors.nameAr?.message}>
-          <input className={inputCls} {...register('nameAr')} />
+        <Field label={t('common.email')} required error={errors.email?.message}>
+          <input dir="ltr" type="email" placeholder="company@example.com" className={inputCls} {...register('email')} />
         </Field>
-        <Field label={t('common.trn')} error={errors.trn?.message}>
+        <Field label="Mobile Number" required error={errors.phone?.message}>
+          <input dir="ltr" placeholder="+971 50 000 0000" className={inputCls} {...register('phone')} />
+        </Field>
+        <Field label="Company Name (Arabic)" error={errors.nameAr?.message}>
+          <input dir="rtl" className={inputCls} {...register('nameAr')} />
+        </Field>
+        <Field label={`${t('common.trn')} (optional)`} error={errors.trn?.message}>
           <input dir="ltr" inputMode="numeric" maxLength={15} className={inputCls} {...register('trn')} />
         </Field>
-        <Field label={t('common.email')} error={errors.email?.message}>
-          <input dir="ltr" type="email" className={inputCls} {...register('email')} />
-        </Field>
-        <Field label={t('common.phone')} error={errors.phone?.message}>
-          <input dir="ltr" className={inputCls} {...register('phone')} />
-        </Field>
-        <Field label="Address" error={errors.address?.message}>
+        <Field label="Address (optional)" error={errors.address?.message}>
           <textarea rows={3} placeholder="Office address" className={inputCls} {...register('address')} />
         </Field>
-        <Field label="Address (Arabic)" error={errors.addressAr?.message}>
+        <Field label="Address in Arabic (optional)" error={errors.addressAr?.message}>
           <textarea rows={2} dir="rtl" placeholder="العنوان بالعربية" className={inputCls} {...register('addressAr')} />
         </Field>
         <Field label={t('common.currency')} error={errors.currency?.message}>

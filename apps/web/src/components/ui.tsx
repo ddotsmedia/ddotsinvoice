@@ -40,10 +40,10 @@ export function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export function Field({ label, error, children }: { label: string; error?: string; children: ReactNode }) {
+export function Field({ label, error, required, children }: { label: string; error?: string; required?: boolean; children: ReactNode }) {
   return (
     <label className="block space-y-1 text-sm">
-      <span className="font-medium">{label}</span>
+      <span className="font-medium">{label}{required && <span className="ml-0.5 text-red-500">*</span>}</span>
       {children}
       {error && <span className="text-xs text-red-600">{error}</span>}
     </label>

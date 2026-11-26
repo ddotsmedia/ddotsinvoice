@@ -7,11 +7,11 @@ export const loginSchema = z.object({
 });
 
 export const companySchema = z.object({
-  name: z.string().min(1).max(255),
+  name: z.string().min(1, 'Company name is required').max(255),
   nameAr: z.string().max(255).optional(),
   trn: z.string().max(15).optional().or(z.literal('')),
-  email: z.string().email().optional().or(z.literal('')),
-  phone: z.string().max(20).optional(),
+  email: z.string().email('Valid email is required').min(1, 'Email is required'),
+  phone: z.string().min(1, 'Phone number is required').max(20),
   address: z.string().optional(),
   addressAr: z.string().optional(),
   currency: z.nativeEnum(Currency),
