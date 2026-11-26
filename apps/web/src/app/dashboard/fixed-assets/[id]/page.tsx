@@ -117,12 +117,12 @@ export default function FixedAssetDetailPage() {
             a.serialNumber ? [L('Serial Number', 'الرقم التسلسلي'), a.serialNumber] : null,
             a.disposalDate ? [L('Disposal Date', 'تاريخ الاستبعاد'), a.disposalDate] : null,
             a.disposalValue ? [L('Disposal Value', 'قيمة الاستبعاد'), fmt(Number(a.disposalValue))] : null,
-          ].filter(Boolean).map(([k, v]) => (
+          ].filter(Boolean).map((row) => { const [k, v] = row as [string, string]; return (
             <div key={k as string}>
               <dt className="text-muted">{k}</dt>
               <dd className="font-medium">{v}</dd>
             </div>
-          ))}
+          ); })}
         </dl>
       </div>
 

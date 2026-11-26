@@ -7,6 +7,8 @@ export const inputCls =
   'w-full rounded-lg border border-border bg-white px-3 py-2 text-sm text-primary outline-none transition-colors focus:ring-2 focus:ring-brand-500 focus:border-transparent hover:border-slate-300 dark:bg-slate-800 dark:hover:border-slate-600';
 export const btnCls =
   'inline-flex items-center gap-2 rounded-lg bg-brand-500 px-4 py-2 text-sm font-semibold text-white transition-all hover:bg-brand-600 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
+export const btnOutlineCls =
+  'inline-flex items-center gap-2 rounded-lg border border-border bg-transparent px-4 py-2 text-sm font-semibold text-primary transition-all hover:bg-surface-2 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed';
 export const cardCls =
   'rounded-xl border border-border bg-white shadow-card dark:bg-slate-900 dark:border-slate-700';
 export const labelCls = 'mb-1 block text-sm font-medium text-secondary';
