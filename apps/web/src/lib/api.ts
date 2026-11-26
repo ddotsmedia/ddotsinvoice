@@ -20,7 +20,8 @@ api.interceptors.request.use((config) => {
   if (!isAuthRoute && typeof window !== 'undefined') {
     try {
       const cid = localStorage.getItem('ddots.companyId');
-      if (cid) config.headers['X-Company-Id'] = cid; // honoured by the API for tenant admins only
+      const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (cid && UUID.test(cid)) config.headers['X-Company-Id'] = cid; // honoured by the API for tenant admins only
     } catch {
       // storage unavailable
     }

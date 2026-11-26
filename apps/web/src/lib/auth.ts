@@ -28,6 +28,8 @@ export function useAuth({ fetchUser = false }: { fetchUser?: boolean } = {}) {
     const { data } = await api.post<{ accessToken: string; user: AuthUser }>('/auth/login', { email, password });
     setAccessToken(data.accessToken);
     qc.setQueryData(['me'], data.user);
+    // Clear stale company selection so a previous session's X-Company-Id doesn't bleed through
+    try { localStorage.removeItem('ddots.companyId'); } catch { /* storage unavailable */ }
     router.replace('/dashboard');
   };
 
