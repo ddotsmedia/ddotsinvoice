@@ -70,9 +70,9 @@ export class PermissionsGuard implements CanActivate {
   }
 
   private async assertCompanyInTenant(actor: AccessTokenPayload, companyId: string): Promise<void> {
-    if (!UUID.test(companyId)) throw new ForbiddenException('Invalid company');
-    // platform_admin has no tenant — they can operate on any company; skip tenant-scoped check
+    // platform_admin has no tenant — they can operate on any company; skip ALL checks
     if (!actor.tenantId) return;
+    if (!UUID.test(companyId)) throw new ForbiddenException('Invalid company');
     // Set tenant context in a transaction so the companies RLS policy is satisfied
     const [c] = await this.db.transaction(async (tx) => {
       await tx.execute(sql`SELECT set_config('app.tenant_id', ${actor.tenantId!}, true)`);
