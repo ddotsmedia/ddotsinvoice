@@ -21,6 +21,18 @@ const COOKIE_OPTS = {
   maxAge: 7 * 24 * 60 * 60,
 };
 
+// Non-httpOnly role cookie — readable by Next.js middleware for routing decisions.
+// Not a security boundary; actual authz is enforced server-side via JWT + RLS.
+const ROLE_COOKIE = 'user_role';
+const ROLE_COOKIE_OPTS = {
+  httpOnly: false,
+  sameSite: 'strict' as const,
+  secure: process.env.NODE_ENV === 'production',
+  path: '/',
+  domain: process.env.COOKIE_DOMAIN || undefined,
+  maxAge: 7 * 24 * 60 * 60,
+};
+
 @ApiTags('auth')
 @Controller('auth')
 export class AuthController {
@@ -35,6 +47,7 @@ export class AuthController {
   async registerTenant(@Body() dto: RegisterTenantDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.registerTenant(dto);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    res.setCookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTS);
     return { accessToken, user };
   }
 
@@ -44,6 +57,7 @@ export class AuthController {
   async login(@Body() dto: LoginDto, @Res({ passthrough: true }) res: FastifyReply) {
     const { accessToken, refreshToken, user } = await this.auth.login(dto.email.toLowerCase(), dto.password);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    res.setCookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTS);
     return { accessToken, user };
   }
 
@@ -55,6 +69,7 @@ export class AuthController {
     const created = await this.invitations.accept(dto);
     const { accessToken, refreshToken, user } = await this.auth.issue(created);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    res.setCookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTS);
     return { accessToken, user };
   }
 
@@ -66,6 +81,7 @@ export class AuthController {
     if (!token) throw new UnauthorizedException();
     const { accessToken, refreshToken, user } = await this.auth.refresh(token);
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    res.setCookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTS);
     return { accessToken, user };
   }
 
@@ -81,6 +97,7 @@ export class AuthController {
     const token = req.cookies[COOKIE];
     if (token) await this.auth.logout(actor.sub, hashToken(token));
     res.clearCookie(COOKIE, { path: '/', domain: process.env.COOKIE_DOMAIN || undefined });
+    res.clearCookie(ROLE_COOKIE, { path: '/', domain: process.env.COOKIE_DOMAIN || undefined });
     return { ok: true };
   }
 
@@ -105,6 +122,7 @@ export class AuthController {
   ) {
     const { accessToken, refreshToken, user } = await this.auth.claimTenant(actor.sub, body.tenantName || 'My Business');
     res.setCookie(COOKIE, refreshToken, COOKIE_OPTS);
+    res.setCookie(ROLE_COOKIE, user.role, ROLE_COOKIE_OPTS);
     return { accessToken, user };
   }
 }
