@@ -7,16 +7,16 @@ export enum DepreciationMethod {
 }
 
 export class CreateFixedAssetDto {
-  @IsString() code: string;
-  @IsString() name: string;
+  @IsString() code!: string;
+  @IsString() name!: string;
   @IsOptional() @IsString() nameAr?: string;
   @IsOptional() @IsString() category?: string;
   @IsOptional() @IsString() description?: string;
-  @IsDateString() acquisitionDate: string;
-  @Type(() => Number) @IsNumber() acquisitionCost: number;
+  @IsDateString() acquisitionDate!: string;
+  @Type(() => Number) @IsNumber() acquisitionCost!: number;
   @IsOptional() @Type(() => Number) @IsNumber() residualValue?: number;
-  @Type(() => Number) @IsNumber() @Min(1) usefulLifeMonths: number;
-  @IsEnum(DepreciationMethod) depreciationMethod: DepreciationMethod;
+  @Type(() => Number) @IsNumber() @Min(1) usefulLifeMonths!: number;
+  @IsEnum(DepreciationMethod) depreciationMethod!: DepreciationMethod;
   @IsOptional() @IsString() location?: string;
   @IsOptional() @IsString() serialNumber?: string;
   @IsOptional() @IsUUID() assetAccountId?: string;
@@ -37,8 +37,8 @@ export class UpdateFixedAssetDto {
 }
 
 export class DisposeAssetDto {
-  @IsDateString() disposalDate: string;
-  @Type(() => Number) @IsNumber() disposalValue: number;
+  @IsDateString() disposalDate!: string;
+  @Type(() => Number) @IsNumber() disposalValue!: number;
   @IsOptional() @IsString() disposalNotes?: string;
 }
 

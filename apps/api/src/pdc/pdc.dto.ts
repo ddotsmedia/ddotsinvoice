@@ -8,12 +8,12 @@ export enum PdcStatus {
 }
 
 export class CreatePdcDto {
-  @IsEnum(PdcType) type: PdcType;
-  @IsString() chequeNumber: string;
+  @IsEnum(PdcType) type!: PdcType;
+  @IsString() chequeNumber!: string;
   @IsOptional() @IsString() bankName?: string;
-  @Type(() => Number) @IsNumber() amount: number;
+  @Type(() => Number) @IsNumber() amount!: number;
   @IsOptional() @IsString() currency?: string;
-  @IsDateString() dueDate: string;
+  @IsDateString() dueDate!: string;
   @IsOptional() @IsUUID() customerId?: string;
   @IsOptional() @IsUUID() supplierId?: string;
   @IsOptional() @IsUUID() bankAccountId?: string;
@@ -22,7 +22,7 @@ export class CreatePdcDto {
 }
 
 export class UpdatePdcStatusDto {
-  @IsEnum(PdcStatus) status: PdcStatus;
+  @IsEnum(PdcStatus) status!: PdcStatus;
   @IsOptional() @IsDateString() presentedDate?: string;
   @IsOptional() @IsDateString() clearedDate?: string;
   @IsOptional() @IsDateString() bouncedDate?: string;

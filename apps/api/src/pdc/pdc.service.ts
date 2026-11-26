@@ -1,5 +1,5 @@
 import { Injectable, NotFoundException, Inject } from '@nestjs/common';
-import { and, between, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
+import { and, eq, gte, ilike, isNull, lte, or, sql } from 'drizzle-orm';
 import { pdcCheques, customers, suppliers, Db } from '@ddotsinvoice/db';
 import { AccessTokenPayload } from '@ddotsinvoice/shared';
 import { DB } from '../infra/drizzle.module';
@@ -40,7 +40,7 @@ export class PdcService {
         customerId: pdcCheques.customerId,
         supplierId: pdcCheques.supplierId,
         customerName: customers.name,
-        supplierName: suppliers.name,
+        supplierName: suppliers.nameEn,
         createdAt: pdcCheques.createdAt,
       })
       .from(pdcCheques)
@@ -72,7 +72,7 @@ export class PdcService {
         supplierId: pdcCheques.supplierId,
         bankAccountId: pdcCheques.bankAccountId,
         customerName: customers.name,
-        supplierName: suppliers.name,
+        supplierName: suppliers.nameEn,
         createdAt: pdcCheques.createdAt,
       })
       .from(pdcCheques)
